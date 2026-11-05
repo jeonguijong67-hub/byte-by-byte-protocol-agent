@@ -1,0 +1,287 @@
+{
+  "task": "N05",
+  "date_kst": "2026-11-05",
+  "status": "in progress: course API credentials expected next week",
+  "n05_complete": false,
+  "notion_updated": true,
+  "code_commit": "3b8f54385999bdc4eb8919f4a6832921adf2755e",
+  "input": {
+    "path": "runs/n05/practice-server",
+    "source": "practice/n05/ping-server.c",
+    "bytes": 16872,
+    "sha256": "545ef39338ceee737e7d5e3e6f1eef1348b537bfc15c0cdd5a620cfe4f006c05",
+    "build_command": "docker compose -f compose.n05.yaml run --rm n05 gcc -O0 -fno-inline -Wall -Wextra -o runs/n05/practice-server practice/n05/ping-server.c"
+  },
+  "versions": {
+    "node": "v24.22.1",
+    "rea": "6.8.0",
+    "ghidra": "12.1.4",
+    "jdk": "21.0.12.1",
+    "gcc": "gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+    "python": "3.12.3",
+    "docker_engine": "29.7.2",
+    "docker_compose": "5.4.0",
+    "image_id": "sha256:d6b4343fc6a4b2c2d959e2bd8f0d327621e6156e6c9b0d1b3f507be4cf47df7b"
+  },
+  "test_run": {
+    "classification": "mock validation",
+    "command": "node --test --test-reporter=tap scripts/rea-smoke.test.mjs",
+    "code_commit": "a9b498456934460c228a119fcf3ac14d1c80a9a1",
+    "node": "v24.18.0",
+    "platform": "win32",
+    "tests": 25,
+    "passed": 25,
+    "failed": 0,
+    "local_log": "runs/n05/tests-a9b4984.tap",
+    "log_sha256": "b11dc8eff72e275a296ac18115b1cb490a78fabba6aebff1feeb2ff53d31b566",
+    "note": "API, REA and git responses inside unit-test fixtures are injected mocks. The actual suite code commit is recorded here. Later commit 3b8f543 adds only .gitattributes."
+  },
+  "rea_observation": {
+    "evidence_id": "ev_f79aba15de71411da86275460aaa5be479a63220dcd27beb1272fac10d914741",
+    "operation": "binary_overview",
+    "provider": {
+      "id": "rea-workflow",
+      "name": "REA composed investigation workflow",
+      "version": "1"
+    },
+    "upstream_provider": {
+      "id": "ghidra",
+      "name": "Ghidra",
+      "version": "12.1.4"
+    },
+    "normalized_result": {
+      "procedure_count": 79,
+      "string_count": 120,
+      "segment_count": 33
+    },
+    "doctor_healthy": true,
+    "doctor_environment_healthy": false,
+    "raw_file": "runs/n05/rea-20261105-02.json.artifacts-91ac46c5-00e9-490b-a7ae-84e43704ba03/rea-analyze.stdout",
+    "raw_bytes": 8411,
+    "raw_sha256": "268d59e3e86ae9684a50c000e19f5eca8202f691401bd5c1751e417d662262ab",
+    "checked_quote": {
+      "quote": "\"procedure_count\":79",
+      "start_byte": 6420,
+      "end_byte": 6440,
+      "exact_match": true,
+      "json_pointer": "/normalized_result/procedure_count",
+      "meaning": "Observed local/external function inventory count; not proof of all functions discovered.",
+      "checked_by": "Codex inspection; author confirmation required",
+      "is_model_summary": false
+    },
+    "limitations": [
+      "Derived by an REA composed workflow.",
+      "Ghidra (ghidra 12.1.4) read_binary_inventory_summary: Cancelling an active Ghidra request terminates its ephemeral database and discards session annotations. The selected target remains open; the next provider query imports the original artifact again.",
+      "Ghidra (ghidra 12.1.4) read_binary_inventory_summary: Counts use the complete defined-string inventory and the same local/external function inventory as list_strings and list_procedures. They do not establish discovery of undefined strings or unidentified functions.",
+      "Ghidra (ghidra 12.1.4) read_binary_inventory_summary: Default-space addresses use lowercase 0x-prefixed hexadecimal; other address spaces use <percent-encoded-space>:0x<hex>.",
+      "Ghidra (ghidra 12.1.4) read_binary_inventory_summary: Memory-block end addresses are exclusive; segment lengths use those observed address coordinates.",
+      "Ghidra (ghidra 12.1.4) read_binary_inventory_summary: Only Ghidra-defined string Data is observed; packed or undefined string bytes may be absent. Completeness applies to that inventory, and an empty search does not establish that text is absent from the artifact. If an address is known, use read_bytes and xrefs to inspect bytes and references.",
+      "Ghidra (ghidra 12.1.4) read_binary_inventory_summary: The imported Program and temporary project are ephemeral and deleted on close. Annotation operations edit session database metadata; original executable bytes are never written.",
+      "Ghidra (ghidra 12.1.4) read_binary_inventory_summary: The session serves operations only after Ghidra reports default auto-analysis complete; incomplete analysis does not expose partial results."
+    ]
+  },
+  "runs": [
+    {
+      "local_result": "runs/n05/mock-20261105-01.json",
+      "result_sha256": "0267236f42c37971c3d8372ae95d8568f80626c85bf337ea403b455d1b3c3ead",
+      "classification": "모의 검증",
+      "mode": "mock",
+      "success": true,
+      "stage": "complete",
+      "started_at": "2026-11-05T14:36:51.284Z",
+      "finished_at": "2026-11-05T14:36:51.483Z",
+      "code_commit": "a9b498456934460c228a119fcf3ac14d1c80a9a1",
+      "code_dirty": true,
+      "input_sha256": "545ef39338ceee737e7d5e3e6f1eef1348b537bfc15c0cdd5a620cfe4f006c05",
+      "model": {
+        "requested": "mock-fixture",
+        "returned": [
+          "mock-fixture",
+          "mock-fixture"
+        ]
+      },
+      "tool_call_id": "mock-call-1",
+      "error": null,
+      "exchange": null,
+      "server_stopped": null
+    },
+    {
+      "local_result": "runs/n05/rea-20261105-01.json",
+      "result_sha256": "0dcc8921a4c8aceb9d70b9fc423ad465d1e1cc512b6bf91473e3067687be0a26",
+      "classification": "실제 REA 단독",
+      "mode": "rea-only",
+      "success": true,
+      "stage": "complete",
+      "started_at": "2026-11-05T14:36:52.877Z",
+      "finished_at": "2026-11-05T14:37:03.643Z",
+      "code_commit": "a9b498456934460c228a119fcf3ac14d1c80a9a1",
+      "code_dirty": true,
+      "input_sha256": "545ef39338ceee737e7d5e3e6f1eef1348b537bfc15c0cdd5a620cfe4f006c05",
+      "model": {
+        "requested": null,
+        "returned": []
+      },
+      "tool_call_id": null,
+      "error": null,
+      "exchange": null,
+      "server_stopped": null
+    },
+    {
+      "local_result": "runs/n05/tcp-20261105-01.json",
+      "result_sha256": "84d9469f66e23a7b6ba43f42c02ca3753adbce81670ecedfa8e8518e52b8654d",
+      "classification": "practice TCP exchange (known input)",
+      "mode": "practice-tcp",
+      "success": true,
+      "stage": "complete",
+      "started_at": "2026-11-05T14:36:52.428794+00:00",
+      "finished_at": "2026-11-05T14:36:52.555177+00:00",
+      "code_commit": "a9b498456934460c228a119fcf3ac14d1c80a9a1",
+      "code_dirty": true,
+      "input_sha256": "545ef39338ceee737e7d5e3e6f1eef1348b537bfc15c0cdd5a620cfe4f006c05",
+      "tool_call_id": null,
+      "error": null,
+      "exchange": {
+        "request_hex": "50494e470a",
+        "write_chunks_hex": [
+          "5049",
+          "4e47",
+          "0a"
+        ],
+        "response_hex": "504f4e470a",
+        "response_text": "PONG\n",
+        "expected_hex": "504f4e470a"
+      },
+      "server_stopped": true
+    },
+    {
+      "local_result": "runs/n05/full-no-key-20261105-01.json",
+      "result_sha256": "27a708381b20d458ffd94d0d365a07cc0a22a683356a49bf03ad57c56bb0d8d6",
+      "classification": "실제 전체 연동",
+      "mode": "full",
+      "success": false,
+      "stage": "configuration",
+      "started_at": "2026-11-05T14:36:50.665Z",
+      "finished_at": "2026-11-05T14:36:50.851Z",
+      "code_commit": "a9b498456934460c228a119fcf3ac14d1c80a9a1",
+      "code_dirty": true,
+      "input_sha256": "545ef39338ceee737e7d5e3e6f1eef1348b537bfc15c0cdd5a620cfe4f006c05",
+      "model": {
+        "requested": null,
+        "returned": []
+      },
+      "tool_call_id": null,
+      "error": {
+        "stage": "configuration",
+        "code": "MISSING_CONFIGURATION",
+        "message": "Missing environment variables: LLM_CHAT_COMPLETIONS_URL, LLM_MODEL, LLM_API_KEY"
+      },
+      "exchange": null,
+      "server_stopped": null
+    },
+    {
+      "local_result": "runs/n05/mock-20261105-02.json",
+      "result_sha256": "268e601447f8fe417956cbd0056499343e563c278037bfce6b9d90803d7c965f",
+      "classification": "모의 검증",
+      "mode": "mock",
+      "success": true,
+      "stage": "complete",
+      "started_at": "2026-11-05T14:39:08.140Z",
+      "finished_at": "2026-11-05T14:39:08.366Z",
+      "code_commit": "3b8f54385999bdc4eb8919f4a6832921adf2755e",
+      "code_dirty": false,
+      "input_sha256": "545ef39338ceee737e7d5e3e6f1eef1348b537bfc15c0cdd5a620cfe4f006c05",
+      "model": {
+        "requested": "mock-fixture",
+        "returned": [
+          "mock-fixture",
+          "mock-fixture"
+        ]
+      },
+      "tool_call_id": "mock-call-1",
+      "error": null,
+      "exchange": null,
+      "server_stopped": null
+    },
+    {
+      "local_result": "runs/n05/rea-20261105-02.json",
+      "result_sha256": "41b4231d96bca17c709ccec6cfc5f2ed8873815efd2cbee0733344ab44e52286",
+      "classification": "실제 REA 단독",
+      "mode": "rea-only",
+      "success": true,
+      "stage": "complete",
+      "started_at": "2026-11-05T14:39:08.174Z",
+      "finished_at": "2026-11-05T14:39:25.601Z",
+      "code_commit": "3b8f54385999bdc4eb8919f4a6832921adf2755e",
+      "code_dirty": false,
+      "input_sha256": "545ef39338ceee737e7d5e3e6f1eef1348b537bfc15c0cdd5a620cfe4f006c05",
+      "model": {
+        "requested": null,
+        "returned": []
+      },
+      "tool_call_id": null,
+      "error": null,
+      "exchange": null,
+      "server_stopped": null
+    },
+    {
+      "local_result": "runs/n05/tcp-20261105-02.json",
+      "result_sha256": "044d6f035b7a528b410a2cdd7fab2b969ecee7124cc85dbd48e42ad5703c481d",
+      "classification": "practice TCP exchange (known input)",
+      "mode": "practice-tcp",
+      "success": true,
+      "stage": "complete",
+      "started_at": "2026-11-05T14:39:06.455463+00:00",
+      "finished_at": "2026-11-05T14:39:06.571401+00:00",
+      "code_commit": "3b8f54385999bdc4eb8919f4a6832921adf2755e",
+      "code_dirty": false,
+      "input_sha256": "545ef39338ceee737e7d5e3e6f1eef1348b537bfc15c0cdd5a620cfe4f006c05",
+      "tool_call_id": null,
+      "error": null,
+      "exchange": {
+        "request_hex": "50494e470a",
+        "write_chunks_hex": [
+          "5049",
+          "4e47",
+          "0a"
+        ],
+        "response_hex": "504f4e470a",
+        "response_text": "PONG\n",
+        "expected_hex": "504f4e470a"
+      },
+      "server_stopped": true
+    },
+    {
+      "local_result": "runs/n05/full-no-key-20261105-02.json",
+      "result_sha256": "706b6f493714887d356f7a56d40b964aa9a7323c82058f705b008596ec9a7f9c",
+      "classification": "실제 전체 연동",
+      "mode": "full",
+      "success": false,
+      "stage": "configuration",
+      "started_at": "2026-11-05T14:39:09.358Z",
+      "finished_at": "2026-11-05T14:39:09.493Z",
+      "code_commit": "3b8f54385999bdc4eb8919f4a6832921adf2755e",
+      "code_dirty": false,
+      "input_sha256": "545ef39338ceee737e7d5e3e6f1eef1348b537bfc15c0cdd5a620cfe4f006c05",
+      "model": {
+        "requested": null,
+        "returned": []
+      },
+      "tool_call_id": null,
+      "error": {
+        "stage": "configuration",
+        "code": "MISSING_CONFIGURATION",
+        "message": "Missing environment variables: LLM_CHAT_COMPLETIONS_URL, LLM_MODEL, LLM_API_KEY"
+      },
+      "exchange": null,
+      "server_stopped": null
+    }
+  ],
+  "notes": [
+    "Run 01 recorded code_dirty=true due solely to CRLF/stat-index differences; git diff --ignore-space-at-eol was empty. Original runs retained.",
+    "Added LF checkout policy and refreshed normalized index; all run 02 records report code_dirty=false.",
+    "No real model API request was made. Full attempts stopped at configuration/MISSING_CONFIGURATION.",
+    "Known practice TCP exchange does not establish protocol inference or N05 completion.",
+    "Raw logs and analysis JSON remain under ignored runs/. This file is a selected public evidence summary."
+  ],
+  "notion_url": "https://app.notion.com/p/409bc69680a68180b514c67028a5ef77?pvs=204"
+}
