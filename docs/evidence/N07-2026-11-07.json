@@ -1,0 +1,203 @@
+{
+  "task": "N07",
+  "owner": "권세현",
+  "classification": "practice evaluation (known public spec)",
+  "experiment_score": false,
+  "recorded_kst": "2026-11-07",
+  "environment": {
+    "runner": "docker compose -f compose.n05.yaml (image byte-by-byte-n05:rea6.8.0)",
+    "os": "Ubuntu 24.04 container on Docker Desktop WSL2 x86-64",
+    "gcc": "13.3.0-6ubuntu2~24.04.1",
+    "python": "3.12.3"
+  },
+  "input": {
+    "source": "practice/n05/ping-server.c",
+    "build": "gcc -O0 -fno-inline -Wall -Wextra -o runs/n07/practice-server practice/n05/ping-server.c",
+    "sha256": "545ef39338ceee737e7d5e3e6f1eef1348b537bfc15c0cdd5a620cfe4f006c05",
+    "matches_n05_record": true
+  },
+  "mock_tests": {
+    "command": "python3 -m unittest discover -s scripts -p 'test_n07*.py'",
+    "result": "Ran 19 tests, OK",
+    "log": "runs/n07/tests-20261107-204758.log",
+    "log_sha256": "a4164b38c77bb8c2266663b4e09e51acf5116096700873e1b086e7eb2d126890"
+  },
+  "runs": [
+    {
+      "name": "known-20261107-204758",
+      "cases_file": "practice/n07/cases.json",
+      "cases_file_sha256": "cb1b13fbdb38f3275ea4cf1238e036cd3c095e38fd32a59898169091bc54c282",
+      "started_at": "2026-11-07T11:48:09.682784+00:00",
+      "finished_at": "2026-11-07T11:48:10.039358+00:00",
+      "code_commit": "cf41a6920e0d8e5ae9849eaa5a5ec6f1a786ec3e",
+      "code_dirty": false,
+      "success": true,
+      "stage": "complete",
+      "exit_code": 0,
+      "server_stopped": true,
+      "server_exit_code_during_eval": null,
+      "summary": {
+        "total": 10,
+        "pass": 10,
+        "fail": 0,
+        "error": 0,
+        "pass_rate": 1.0,
+        "all_pass": true
+      },
+      "verdicts": [
+        {
+          "case_id": "ping-single-write",
+          "verdict": "pass",
+          "expected_hex": "504f4e470a",
+          "actual_hex": "504f4e470a",
+          "first_diff_offset": null
+        },
+        {
+          "case_id": "ping-split-writes",
+          "verdict": "pass",
+          "expected_hex": "504f4e470a",
+          "actual_hex": "504f4e470a",
+          "first_diff_offset": null
+        },
+        {
+          "case_id": "ping-byte-by-byte",
+          "verdict": "pass",
+          "expected_hex": "504f4e470a",
+          "actual_hex": "504f4e470a",
+          "first_diff_offset": null
+        },
+        {
+          "case_id": "unknown-command",
+          "verdict": "pass",
+          "expected_hex": "4552520a",
+          "actual_hex": "4552520a",
+          "first_diff_offset": null
+        },
+        {
+          "case_id": "lowercase-ping",
+          "verdict": "pass",
+          "expected_hex": "4552520a",
+          "actual_hex": "4552520a",
+          "first_diff_offset": null
+        },
+        {
+          "case_id": "ping-crlf",
+          "verdict": "pass",
+          "expected_hex": "4552520a",
+          "actual_hex": "4552520a",
+          "first_diff_offset": null
+        },
+        {
+          "case_id": "empty-line",
+          "verdict": "pass",
+          "expected_hex": "4552520a",
+          "actual_hex": "4552520a",
+          "first_diff_offset": null
+        },
+        {
+          "case_id": "overlong-63-bytes",
+          "verdict": "pass",
+          "expected_hex": "4552520a",
+          "actual_hex": "4552520a",
+          "first_diff_offset": null
+        },
+        {
+          "case_id": "eof-before-newline",
+          "verdict": "pass",
+          "expected_hex": "",
+          "actual_hex": "",
+          "first_diff_offset": null
+        },
+        {
+          "case_id": "binary-bytes",
+          "verdict": "pass",
+          "expected_hex": "4552520a",
+          "actual_hex": "4552520a",
+          "first_diff_offset": null
+        }
+      ],
+      "local_raw": {
+        "runs/n07/known-20261107-204758.json": "092dee109bbf3a0c514d94139890a63c7dfa6716aebcac27029a08ef5d2b5373",
+        "runs/n07/known-20261107-204758.csv": "c18ed5b77c08d22cd78ed0ee6c5f0814308a1df01ae3df91cfddea41f44a27b9",
+        "runs/n07/known-20261107-204758.json.server.stderr": "b69707eff32e642249223d60e565dc82e0a9230350d47208d2694d81757b63c0"
+      }
+    },
+    {
+      "name": "mismatch-20261107-204758",
+      "cases_file": "practice/n07/cases-mismatch.json",
+      "cases_file_sha256": "36fb9d49eba5cc07fa804ba161ebce452f90ef4b0add74502a42e00600949f2a",
+      "started_at": "2026-11-07T11:48:12.643323+00:00",
+      "finished_at": "2026-11-07T11:48:13.794741+00:00",
+      "code_commit": "cf41a6920e0d8e5ae9849eaa5a5ec6f1a786ec3e",
+      "code_dirty": false,
+      "success": true,
+      "stage": "complete",
+      "exit_code": 1,
+      "server_stopped": true,
+      "server_exit_code_during_eval": null,
+      "summary": {
+        "total": 6,
+        "pass": 1,
+        "fail": 4,
+        "error": 1,
+        "pass_rate": 0.1667,
+        "all_pass": false
+      },
+      "verdicts": [
+        {
+          "case_id": "control-ping",
+          "verdict": "pass",
+          "expected_hex": "504f4e470a",
+          "actual_hex": "504f4e470a",
+          "first_diff_offset": null
+        },
+        {
+          "case_id": "missing-newline-in-reply",
+          "verdict": "fail",
+          "expected_hex": "504f4e47",
+          "actual_hex": "504f4e470a",
+          "first_diff_offset": 4
+        },
+        {
+          "case_id": "wrong-command-name",
+          "verdict": "fail",
+          "expected_hex": "504f4e470a",
+          "actual_hex": "4552520a",
+          "first_diff_offset": 0
+        },
+        {
+          "case_id": "case-insensitive-assumption",
+          "verdict": "fail",
+          "expected_hex": "504f4e470a",
+          "actual_hex": "4552520a",
+          "first_diff_offset": 0
+        },
+        {
+          "case_id": "crlf-assumption",
+          "verdict": "fail",
+          "expected_hex": "504f4e470a",
+          "actual_hex": "4552520a",
+          "first_diff_offset": 0
+        },
+        {
+          "case_id": "no-terminator-assumption",
+          "verdict": "error",
+          "expected_hex": "504f4e470a",
+          "actual_hex": "",
+          "first_diff_offset": 0,
+          "error": "timeout"
+        }
+      ],
+      "local_raw": {
+        "runs/n07/mismatch-20261107-204758.json": "ae8f6a50bedd0cbaf439ef61e784624769937d7c94e0170e2778de68df351601",
+        "runs/n07/mismatch-20261107-204758.csv": "b30d75619614ab68085cc559a28b4d370b2d44344382516e0200b039d643effb",
+        "runs/n07/mismatch-20261107-204758.json.server.stderr": "dfa55a23923fb36f41dfa736acf12850afa9e6c663516b36637565fb4102c366"
+      }
+    }
+  ],
+  "owner_check": {
+    "date_kst": "2026-11-07",
+    "where": "WSL Ubuntu, GCC 15.2, Python 3.14; local runs/n07/my-*",
+    "status": "done; see docs/ai-usage.md"
+  }
+}

@@ -1,0 +1,15 @@
+﻿services:
+  n05:
+    image: byte-by-byte-n05:rea6.8.0
+    build:
+      context: ./infra/n05
+    init: true
+    working_dir: /work
+    volumes:
+      - .:/work:ro
+      - ./runs:/work/runs
+    environment:
+      LLM_CHAT_COMPLETIONS_URL: ${LLM_CHAT_COMPLETIONS_URL:-}
+      LLM_MODEL: ${LLM_MODEL:-}
+      LLM_API_KEY: ${LLM_API_KEY:-}
+    command: ["rea", "doctor", "--provider", "ghidra", "--json"]

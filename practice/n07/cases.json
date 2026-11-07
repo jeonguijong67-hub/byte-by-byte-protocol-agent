@@ -1,0 +1,28 @@
+{
+  "name": "n05-practice-known-spec",
+  "description": "Expected responses of the public N05 practice server, taken from practice/n05/README.md. Known public protocol; practice results are not experiment scores.",
+  "spec_source": "practice/n05/README.md",
+  "defaults": {"timeout_s": 3, "chunk_delay_ms": 20},
+  "cases": [
+    {"id": "ping-single-write", "description": "Exact PING in one write",
+     "send": ["PING\n"], "expect": "PONG\n"},
+    {"id": "ping-split-writes", "description": "PING split across three writes",
+     "send": ["PI", "NG", "\n"], "expect": "PONG\n"},
+    {"id": "ping-byte-by-byte", "description": "PING sent one byte per write",
+     "send": ["P", "I", "N", "G", "\n"], "expect": "PONG\n"},
+    {"id": "unknown-command", "description": "Complete line that is not PING",
+     "send": ["HELLO\n"], "expect": "ERR\n"},
+    {"id": "lowercase-ping", "description": "Command match is case-sensitive",
+     "send": ["ping\n"], "expect": "ERR\n"},
+    {"id": "ping-crlf", "description": "CRLF terminator is not the exact PING line",
+     "send": ["PING\r\n"], "expect": "ERR\n"},
+    {"id": "empty-line", "description": "Bare newline",
+     "send": ["\n"], "expect": "ERR\n"},
+    {"id": "overlong-63-bytes", "description": "63 bytes without newline fill the request buffer",
+     "send": ["AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"], "expect": "ERR\n"},
+    {"id": "eof-before-newline", "description": "Client half-closes before the newline; no response",
+     "send": ["PING"], "half_close": true, "expect": ""},
+    {"id": "binary-bytes", "description": "Non-ASCII bytes followed by newline",
+     "send_hex": ["00ff7f", "0a"], "expect": "ERR\n"}
+  ]
+}

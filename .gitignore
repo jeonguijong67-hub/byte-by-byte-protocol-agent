@@ -218,3 +218,8 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+# N05 local input copies, binaries, raw logs and API responses
+/runs/
+.env.*
+!.env.example
+*.artifacts-*/

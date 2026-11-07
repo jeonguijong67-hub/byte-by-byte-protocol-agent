@@ -1,0 +1,20 @@
+{
+  "name": "n05-practice-wrong-spec",
+  "description": "Negative control: deliberately wrong expectations, as an incorrectly inferred specification would produce. The evaluator must report fail/error for these and pass only for the control case.",
+  "spec_source": "deliberately wrong; see practice/n05/README.md for the real behaviour",
+  "defaults": {"timeout_s": 2, "chunk_delay_ms": 20},
+  "cases": [
+    {"id": "control-ping", "description": "Control: correct expectation, should pass",
+     "send": ["PING\n"], "expect": "PONG\n"},
+    {"id": "missing-newline-in-reply", "description": "Wrong: assumes reply has no newline",
+     "send": ["PING\n"], "expect": "PONG"},
+    {"id": "wrong-command-name", "description": "Wrong: assumes HELLO is also answered with PONG",
+     "send": ["HELLO\n"], "expect": "PONG\n"},
+    {"id": "case-insensitive-assumption", "description": "Wrong: assumes lowercase ping is accepted",
+     "send": ["ping\n"], "expect": "PONG\n"},
+    {"id": "crlf-assumption", "description": "Wrong: assumes CRLF-terminated PING is accepted",
+     "send": ["PING\r\n"], "expect": "PONG\n"},
+    {"id": "no-terminator-assumption", "description": "Wrong: assumes PING without newline is answered; server keeps waiting, so the case times out",
+     "send": ["PING"], "expect": "PONG\n", "timeout_s": 1}
+  ]
+}
