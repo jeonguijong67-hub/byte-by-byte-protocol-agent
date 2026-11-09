@@ -1,0 +1,1 @@
+run_id,experiment,condition,repeat,client_version,client_origin,test_type,net_delay_ms,loss_pct,case_id,verdict,expected_text,actual_text,expected_hex,actual_hex,first_diff_offset,server_closed,error,elapsed_ms,description,started_at,code_commit,notes
