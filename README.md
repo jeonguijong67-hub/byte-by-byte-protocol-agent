@@ -11,3 +11,4 @@ LLM- and REA-assisted reconstruction of custom TCP protocols, with compatible cl
 - [Task, evidence and contribution rules](CONTRIBUTING.md)
 - [N05–N07 integration handoff](docs/integration-handoff.md)
 - [Windows Docker integration evidence (2026-11-09)](docs/evidence/N05-N07-integration-2026-11-09.md)
+- [N03 evaluation sheet and result CSV format](docs/n03-evaluation-format.md)
