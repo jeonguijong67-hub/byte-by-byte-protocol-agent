@@ -38,7 +38,7 @@ const [aRequest, bRequest, rea] = await Promise.all([read(a.request_file), read(
 assert.deepEqual(aRequest.messages[0], bRequest.messages[0]);
 assert.equal(rea.success, true);
 assert.equal(rea.mode, 'rea-only');
-assert.equal(rea.command_backend, 'real');
+assert.equal(rea.execution_backend, 'real');
 assert.equal(rea.evidence.validation.upstream_provider, 'ghidra');
 assert.equal(rea.evidence.validation.subject_sha256, b.input.binary.sha256);
 const binaryRaw = await readFile(rea.evidence.raw_file, 'utf8');
