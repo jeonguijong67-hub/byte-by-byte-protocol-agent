@@ -1,0 +1,43 @@
+name: Key-free protocol checks
+on:
+  push:
+    branches: ['n09-*']
+    paths: ['scripts/**', 'practice/**', '.github/workflows/keyless-checks.yml']
+  pull_request:
+    paths: ['scripts/**', 'practice/**', '.github/workflows/keyless-checks.yml']
+permissions:
+  contents: read
+jobs:
+  keyless:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Prepare key-free environment
+        run: |
+          mkdir -p runs/n09
+          sudo apt-get update -qq
+          sudo apt-get install -y tcpdump
+      - name: Node mock regressions
+        run: node --test scripts/rea-smoke.test.mjs scripts/n09-contract.test.mjs scripts/n09-prepare.test.mjs | tee runs/n09/node-tests.log
+      - name: Python evaluator regressions
+        run: python3 -m unittest discover -s scripts -p 'test_n07*.py' 2>&1 | tee runs/n09/python-tests.log
+      - name: Actual public PCAP preparation, condition A
+        run: |
+          node scripts/n09-prepare.mjs --condition A --pcap practice/n06/normal-sessions.pcap --out runs/n09/A-public-practice.json
+          node -e "const r=require('./runs/n09/A-public-practice.json'); if(!r.success || r.model_called || r.experiment_score || r.input.binary) process.exit(1)"
+      - name: Actual public N06 TCP evaluation
+        run: |
+          gcc -O0 -fno-inline -Wall -Wextra -o runs/n09/practice-server practice/n06/server.c
+          python3 scripts/n07-evaluate.py --cases practice/n06/cases.json --binary runs/n09/practice-server --out runs/n09/n06-evaluation.json
+          node -e "const r=require('./runs/n09/n06-evaluation.json'); if(!r.summary.all_pass || r.summary.pass!==21 || !r.server_stopped) process.exit(1)"
+      - name: Retain key-free evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: keyless-evidence
+          path: runs/n09/
+          retention-days: 30
