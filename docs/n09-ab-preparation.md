@@ -79,3 +79,28 @@ REA의 `binary_overview`는 전체 역공학이 아니다. 실제 프로토콜 �
 본 실험 A/B 5회씩의 점수, 클라이언트 자동 생성, 부하 측정은 아직 수행하지 않았다.
 
 본인 확인: 의종이 위 명령으로 A/B 실제 준비 결과와 해시를 확인한 뒤 `docs/ai-usage.md`를 갱신한다.
+
+## 이번 실행과 직접 확인
+
+[2026-11-13 증거](evidence/N09-2026-11-13.md)와 [최종 CI](https://github.com/jeonguijong67-hub/byte-by-byte-protocol-agent/actions/runs/43405177497)에 실제 A/B·REA, 회귀와 TCP 실행 결과를 남겼다.
+N05 이미지에 tcpdump를 추가했으므로 기존 이미지가 있어도 `docker compose -f compose.n05.yaml build n05`로 재빌드한다.
+
+저장소의 모든 변경을 커밋한 상태에서 아래를 실행하면 실제 A/B 쌍을 같은 컨테이너에서 확인할 수 있다.
+공개 연습 서버를 빌드하며 본 실험 입력은 쓰지 않는다. 각 실행은 새 태그를 사용한다.
+
+```powershell
+New-Item -ItemType Directory -Force runs/n09 | Out-Null
+$runTag = Get-Date -Format 'yyyyMMdd-HHmmss'
+$pairCommands = @'
+git config --global --add safe.directory /work
+gcc -O0 -fno-inline -Wall -Wextra -o runs/n09/practice-server practice/n06/server.c
+node scripts/n09-prepare.mjs --condition A --pcap practice/n06/normal-sessions.pcap --out "runs/n09/A-$1.json"
+node scripts/n09-prepare.mjs --condition B --pcap practice/n06/normal-sessions.pcap --binary runs/n09/practice-server --out "runs/n09/B-$1.json"
+node scripts/n09-check-pair.mjs "runs/n09/A-$1.json" "runs/n09/B-$1.json" "runs/n09/pair-$1.json"
+'@
+docker compose -f compose.n05.yaml run --rm n05 bash -euo pipefail -c $pairCommands n09 $runTag
+```
+
+기대 결과는 A/B `success:true`와 `N09_PAIR_SUMMARY`의 모든 checks가 true인 것이다.
+모델 호출0회·실험점수false·semantic_review/human_execution_check pending은 유지된다.
+사람이 실행·코드·근거를 확인한 기록은 AI 사용 기록 마지막 칸에 별도로 남긴다.
