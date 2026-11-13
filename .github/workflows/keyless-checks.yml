@@ -67,6 +67,9 @@ jobs:
             node scripts/n09-prepare.mjs --condition B --pcap practice/n06/normal-sessions.pcap --binary runs/n09/practice-server --out runs/n09/B-rea-practice.json
             node scripts/n09-check-pair.mjs runs/n09/A-rea-practice.json runs/n09/B-rea-practice.json runs/n09/pair-summary.json
           ' 2>&1 | tee runs/n09/rea-pair.log
+      - name: Give the uploader ownership of generated evidence
+        if: always()
+        run: sudo chown -R "$(id -u):$(id -g)" "$GITHUB_WORKSPACE/runs/n09"
       - name: Retain real REA preparation evidence
         if: always()
         uses: actions/upload-artifact@v4
