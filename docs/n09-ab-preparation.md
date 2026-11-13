@@ -7,6 +7,7 @@
 ## 실행
 
 저장소 루트, Docker Desktop Linux 엔진과 기존 N05 이미지가 필요하다.
+N05 이미지는 tcpdump를 포함하도록 다시 빌드한다: `docker compose -f compose.n05.yaml build n05`.
 원본 결과는 Git 제외 `runs/n09/`에 매번 새 이름으로 남긴다. Node 내장 모듈만 사용한다.
 
 ```powershell
