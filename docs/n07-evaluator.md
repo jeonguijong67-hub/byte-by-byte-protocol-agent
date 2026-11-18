@@ -7,7 +7,7 @@
 | 파일 | 역할 |
 | --- | --- |
 | `scripts/n07-evaluate.py` | 평가기. Python 3.11+ 표준 라이브러리만 사용 |
-| `scripts/test_n07_evaluate.py` | 모의 테스트 21개. C 서버 대신 같은 동작의 Python 서버와 시간 예산 대역을 사용 |
+| `scripts/test_n07_evaluate.py` | 모의 테스트 26개. C 서버 대신 같은 동작의 Python 서버와 시간 예산 대역을 사용 |
 | `practice/n07/cases.json` | 연습 서버의 실제 명세(README)대로 쓴 기대값 10개 — 모두 `pass`가 기대 결과 |
 | `practice/n07/cases-mismatch.json` | 일부러 틀린 명세(음성 대조군) 6개 — 대조군 1개만 `pass`, 나머지는 `fail`/`error`가 기대 결과 |
 
@@ -32,13 +32,13 @@ CSV는 케이스당 한 줄이며 열은 N03 [`results.csv`](n03-evaluation-form
 | `--experiment` | `practice` | `practice`/`E1`/`E2`/`E3` |
 | `--condition` | `practice` | `A`/`B`/`original`/`practice` |
 | `--repeat` | 빈 칸 | 1 이상 정수 |
-| `--client-version` | 빈 칸 | 평가한 클라이언트를 만든 `analysis_run_id`(수정본 `-m1`…), 원본 `original` |
+| `--client-version` | `--client-origin original`이면 `original`, 아니면 빈 칸 | 평가한 클라이언트를 만든 `analysis_run_id`(수정본 `-m1`…), 원본 `original` |
 | `--client-origin` | `original` | `auto`/`manual`/`original` |
 | `--test-type` | `socket` | `socket`/`unseen_input`/`delay_loss` (`parser_chunk`는 소켓을 쓰지 않으므로 N07 대상 아님) |
-| `--net-delay-ms`, `--loss-pct` | 0 | 0 이상, 손실률은 100 이하 |
+| `--net-delay-ms`, `--loss-pct` | 0 | 0 이상 유한값. 지연은 600000 ms, 손실률은 100 이하 |
 | `--notes` | 빈 칸 | 문자열 |
 
-`--experiment`가 `practice`가 아니면 `experiment_score: true`이고 `classification`이 `<실험> evaluation`이 된다. 허용되지 않는 값은 결과 파일을 만들기 전에 거부한다(종료 코드 2). `started_at`은 케이스별 시작 시각(UTC), `code_commit`은 평가기 커밋(작업 트리가 dirty면 `-dirty` 접미)이다.
+`--experiment`가 `practice`가 아니면 `experiment_score: true`이고 `classification`이 `<실험> evaluation`이 된다. 허용되지 않는 값과 잘못된 조합(`practice`가 아닌 실험에 `--condition practice`, `--condition original`에 `original`이 아닌 출처, `A`/`B`에 `original` 출처)은 결과 파일을 만들기 전에 거부한다(종료 코드 2). 숫자 열은 지수 표기 없이 쓴다(`0`, `2.5`). `started_at`은 케이스별 시작 시각(UTC), `code_commit`은 평가기 커밋(작업 트리가 dirty면 `-dirty` 접미)이다.
 
 ## 실행
 

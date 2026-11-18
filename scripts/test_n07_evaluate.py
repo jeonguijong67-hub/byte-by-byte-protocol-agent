@@ -324,7 +324,7 @@ class MainTest(unittest.TestCase):
         record = json.loads(out.read_text(encoding="utf-8"))
         self.assertEqual(record["conditions"], {
             "run_id": "plain", "experiment": "practice", "condition": "practice", "repeat": None,
-            "client_version": "", "client_origin": "original", "test_type": "socket",
+            "client_version": "original", "client_origin": "original", "test_type": "socket",
             "net_delay_ms": 0.0, "loss_pct": 0.0, "notes": ""})
         self.assertFalse(record["experiment_score"])
         with out.with_suffix(".csv").open(encoding="utf-8", newline="") as stream:
@@ -359,10 +359,21 @@ class MainTest(unittest.TestCase):
     def test_invalid_condition_values_rejected(self):
         for extra in (["--experiment", "E4"], ["--condition", "C"], ["--client-origin", "robot"],
                       ["--test-type", "udp"], ["--repeat", "0"], ["--net-delay-ms", "-1"],
-                      ["--loss-pct", "101"], ["--loss-pct", "nan"]):
+                      ["--loss-pct", "101"], ["--loss-pct", "nan"], ["--net-delay-ms", "inf"],
+                      ["--net-delay-ms", "1e309"], ["--net-delay-ms", "600001"],
+                      # Mislabelled combinations.
+                      ["--experiment", "E2"],
+                      ["--condition", "original", "--client-origin", "auto"],
+                      ["--condition", "A"]):
             with self.subTest(extra=extra), mock.patch("sys.stderr"):
                 with self.assertRaises(SystemExit):
                     self.run_main("cases.json", "invalid.json", *extra)
+                self.assertFalse((Path(self.directory.name) / "invalid.json").exists())
+
+    def test_number_columns_have_no_exponent(self):
+        self.assertEqual([n07.csv_number(value) for value in (0.0, 100.0, 2.5, 0.00001)],
+                         ["0", "100", "2.5", "0.00001"])
+        self.assertEqual(str(n07.bounded_float(100)("-0")), "0.0")
 
     def test_mismatch_run_exits_nonzero_but_completes(self):
         code, out = self.run_main("cases-mismatch.json", "wrong.json")

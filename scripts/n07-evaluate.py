@@ -31,6 +31,7 @@ CONDITIONS = ("A", "B", "original", "practice")
 CLIENT_ORIGINS = ("auto", "manual", "original")
 # parser_chunk is tested without sockets, so it is not an N07 test type.
 TEST_TYPES = ("socket", "unseen_input", "delay_loss")
+MAX_DELAY_MS = 600000
 
 
 def now():
@@ -263,8 +264,8 @@ def git_state():
 
 
 def csv_number(value):
-    """0.0 -> "0", 2.5 -> "2.5", as in the N03 examples."""
-    return str(int(value)) if value.is_integer() else repr(value)
+    """0.0 -> "0", 2.5 -> "2.5", 0.00001 -> "0.00001" (no exponent), as in the N03 examples."""
+    return format(value, "f").rstrip("0").rstrip(".")
 
 
 def write_csv(path, results, conditions, code_commit):
@@ -299,9 +300,22 @@ def bounded_float(maximum):
         except ValueError:
             raise argparse.ArgumentTypeError(f"not a number: {text}") from None
         if not math.isfinite(value) or value < 0 or value > maximum:
-            raise argparse.ArgumentTypeError(f"must be between 0 and {maximum}")
-        return value
+            raise argparse.ArgumentTypeError(f"must be between 0 and {maximum:g}")
+        return value + 0.0  # -0 -> 0.0
     return parse
+
+
+def check_conditions(parser, args):
+    """Reject condition combinations that would mislabel a run."""
+    if args.experiment != "practice" and args.condition == "practice":
+        parser.error(f"--experiment {args.experiment} needs --condition A, B or original")
+    if args.condition == "original" and args.client_origin != "original":
+        parser.error("--condition original needs --client-origin original")
+    if args.condition in ("A", "B") and args.client_origin == "original":
+        parser.error(f"--condition {args.condition} needs --client-origin auto or manual")
+    if args.client_version is None:
+        args.client_version = "original" if args.client_origin == "original" else ""
+    return args
 
 
 def parse_args(argv):
@@ -316,14 +330,15 @@ def parse_args(argv):
     cond.add_argument("--experiment", choices=EXPERIMENTS, default="practice")
     cond.add_argument("--condition", choices=CONDITIONS, default="practice")
     cond.add_argument("--repeat", type=positive_int, help="repeat number within the condition")
-    cond.add_argument("--client-version", default="",
-                      help="analysis_run_id of the client under test (manual edits: <id>-m1 ...)")
+    cond.add_argument("--client-version",
+                      help="analysis_run_id of the client under test (manual edits: <id>-m1 ...); "
+                           "default 'original' for an original client")
     cond.add_argument("--client-origin", choices=CLIENT_ORIGINS, default="original")
     cond.add_argument("--test-type", choices=TEST_TYPES, default="socket")
-    cond.add_argument("--net-delay-ms", type=bounded_float(math.inf), default=0.0)
+    cond.add_argument("--net-delay-ms", type=bounded_float(MAX_DELAY_MS), default=0.0)
     cond.add_argument("--loss-pct", type=bounded_float(100), default=0.0)
     cond.add_argument("--notes", default="")
-    return parser.parse_args(argv)
+    return check_conditions(parser, parser.parse_args(argv))
 
 
 def main(argv=None):
@@ -333,12 +348,13 @@ def main(argv=None):
         raise SystemExit("--out must end in .json (the CSV is written next to it)")
     out.parent.mkdir(parents=True, exist_ok=True)
     csv_path = out.with_suffix(".csv")
+    # Read the commit before creating our own output, which could otherwise mark the tree dirty.
+    commit, dirty = git_state()
     # Refuse to overwrite earlier evidence.
     if csv_path.exists():
         raise FileExistsError(f"Refusing to overwrite {csv_path}")
     with out.open("x", encoding="utf-8"):
         pass
-    commit, dirty = git_state()
     conditions = {key: getattr(args, key) for key in CONDITION_FIELDS if key != "run_id"}
     conditions = {"run_id": args.run_id or out.stem, **conditions, "notes": args.notes}
     practice = args.experiment == "practice"
