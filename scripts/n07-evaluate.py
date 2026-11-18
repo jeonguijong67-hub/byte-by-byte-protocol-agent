@@ -313,6 +313,13 @@ def check_conditions(parser, args):
         parser.error("--condition original needs --client-origin original")
     if args.condition in ("A", "B") and args.client_origin == "original":
         parser.error(f"--condition {args.condition} needs --client-origin auto or manual")
+    if args.experiment != "practice" and args.condition in ("A", "B"):
+        # Main-experiment rows are joined to E1 by analysis_run_id and repeat (N03 §2.4).
+        if not (args.client_version or "").strip():
+            parser.error(f"--experiment {args.experiment} --condition {args.condition} needs "
+                         "--client-version <analysis_run_id>")
+        if args.repeat is None:
+            parser.error(f"--experiment {args.experiment} --condition {args.condition} needs --repeat")
     if args.client_version is None:
         args.client_version = "original" if args.client_origin == "original" else ""
     return args

@@ -364,11 +364,25 @@ class MainTest(unittest.TestCase):
                       # Mislabelled combinations.
                       ["--experiment", "E2"],
                       ["--condition", "original", "--client-origin", "auto"],
-                      ["--condition", "A"]):
+                      ["--condition", "A"],
+                      # Main-experiment A/B runs without analysis ID or repeat number.
+                      ["--experiment", "E2", "--condition", "B", "--client-origin", "auto", "--repeat", "1"],
+                      ["--experiment", "E2", "--condition", "B", "--client-origin", "auto", "--repeat", "1",
+                       "--client-version", " "],
+                      ["--experiment", "E1", "--condition", "A", "--client-origin", "manual",
+                       "--client-version", "A-r1-m1"]):
             with self.subTest(extra=extra), mock.patch("sys.stderr"):
                 with self.assertRaises(SystemExit):
                     self.run_main("cases.json", "invalid.json", *extra)
                 self.assertFalse((Path(self.directory.name) / "invalid.json").exists())
+
+    def test_ids_optional_for_practice_and_original(self):
+        for name, extra in (("practice-ab.json", ["--condition", "A", "--client-origin", "auto"]),
+                            ("baseline.json", ["--experiment", "E2", "--condition", "original"])):
+            with self.subTest(extra=extra):
+                code, out = self.run_main("cases.json", name, *extra)
+                self.assertEqual(code, 0)
+                self.assertIsNone(json.loads(out.read_text(encoding="utf-8"))["conditions"]["repeat"])
 
     def test_number_columns_have_no_exponent(self):
         self.assertEqual([n07.csv_number(value) for value in (0.0, 100.0, 2.5, 0.00001)],
