@@ -291,10 +291,10 @@ class MainTest(unittest.TestCase):
         self.directory = tempfile.TemporaryDirectory()
         self.addCleanup(self.directory.cleanup)
 
-    def run_main(self, cases_name, out_name):
+    def run_main(self, cases_name, out_name, *extra):
         out = Path(self.directory.name) / out_name
         code = n07.main(["--cases", str(ROOT / "practice" / "n07" / cases_name),
-                         "--target", f"127.0.0.1:{self.server.port}", "--out", str(out)])
+                         "--target", f"127.0.0.1:{self.server.port}", "--out", str(out), *extra])
         return code, out
 
     def test_writes_json_and_csv(self):
@@ -309,7 +309,85 @@ class MainTest(unittest.TestCase):
         with out.with_suffix(".csv").open(encoding="utf-8", newline="") as stream:
             rows = list(csv.DictReader(stream))
         self.assertEqual([row["verdict"] for row in rows], ["pass"] * 10)
-        self.assertEqual(list(rows[0]), n07.CSV_FIELDS)
+        self.assertEqual(list(rows[0]), n07.RESULT_FIELDS)
+
+    def test_csv_header_matches_n03_template(self):
+        with (ROOT / "docs" / "templates" / "results.csv").open(encoding="utf-8", newline="") as stream:
+            template = next(csv.reader(stream))
+        self.assertEqual(n07.RESULT_FIELDS, template)
+        start = template.index(n07.CSV_FIELDS[0])
+        self.assertEqual(template[start:start + len(n07.CSV_FIELDS)], n07.CSV_FIELDS)
+
+    def test_default_conditions_mark_practice(self):
+        code, out = self.run_main("cases.json", "plain.json")
+        self.assertEqual(code, 0)
+        record = json.loads(out.read_text(encoding="utf-8"))
+        self.assertEqual(record["conditions"], {
+            "run_id": "plain", "experiment": "practice", "condition": "practice", "repeat": None,
+            "client_version": "original", "client_origin": "original", "test_type": "socket",
+            "net_delay_ms": 0.0, "loss_pct": 0.0, "notes": ""})
+        self.assertFalse(record["experiment_score"])
+        with out.with_suffix(".csv").open(encoding="utf-8", newline="") as stream:
+            rows = list(csv.DictReader(stream))
+        for row in rows:
+            self.assertEqual((row["run_id"], row["experiment"], row["condition"], row["repeat"],
+                              row["test_type"], row["net_delay_ms"], row["loss_pct"]),
+                             ("plain", "practice", "practice", "", "socket", "0", "0"))
+            self.assertTrue(row["started_at"].endswith("+00:00"))
+        commit, dirty = n07.git_state()
+        expected_commit = "" if commit is None else commit + ("-dirty" if dirty else "")
+        self.assertEqual(rows[0]["code_commit"], expected_commit)
+
+    def test_condition_options_fill_every_row(self):
+        code, out = self.run_main("cases.json", "e2.json", "--run-id", "E2-B-r3", "--experiment", "E2",
+                                  "--condition", "B", "--repeat", "3", "--client-version", "B-r3-v1",
+                                  "--client-origin", "auto", "--test-type", "delay_loss",
+                                  "--net-delay-ms", "100", "--loss-pct", "2.5", "--notes", "netem on eth0")
+        self.assertEqual(code, 0)
+        record = json.loads(out.read_text(encoding="utf-8"))
+        self.assertTrue(record["experiment_score"])
+        self.assertEqual(record["conditions"]["repeat"], 3)
+        with out.with_suffix(".csv").open(encoding="utf-8", newline="") as stream:
+            rows = list(csv.DictReader(stream))
+        self.assertEqual(len(rows), 10)
+        self.assertEqual({(row["run_id"], row["experiment"], row["condition"], row["repeat"],
+                           row["client_version"], row["client_origin"], row["test_type"],
+                           row["net_delay_ms"], row["loss_pct"], row["notes"]) for row in rows},
+                         {("E2-B-r3", "E2", "B", "3", "B-r3-v1", "auto", "delay_loss", "100", "2.5",
+                           "netem on eth0")})
+
+    def test_invalid_condition_values_rejected(self):
+        for extra in (["--experiment", "E4"], ["--condition", "C"], ["--client-origin", "robot"],
+                      ["--test-type", "udp"], ["--repeat", "0"], ["--net-delay-ms", "-1"],
+                      ["--loss-pct", "101"], ["--loss-pct", "nan"], ["--net-delay-ms", "inf"],
+                      ["--net-delay-ms", "1e309"], ["--net-delay-ms", "600001"],
+                      # Mislabelled combinations.
+                      ["--experiment", "E2"],
+                      ["--condition", "original", "--client-origin", "auto"],
+                      ["--condition", "A"],
+                      # Main-experiment A/B runs without analysis ID or repeat number.
+                      ["--experiment", "E2", "--condition", "B", "--client-origin", "auto", "--repeat", "1"],
+                      ["--experiment", "E2", "--condition", "B", "--client-origin", "auto", "--repeat", "1",
+                       "--client-version", " "],
+                      ["--experiment", "E1", "--condition", "A", "--client-origin", "manual",
+                       "--client-version", "A-r1-m1"]):
+            with self.subTest(extra=extra), mock.patch("sys.stderr"):
+                with self.assertRaises(SystemExit):
+                    self.run_main("cases.json", "invalid.json", *extra)
+                self.assertFalse((Path(self.directory.name) / "invalid.json").exists())
+
+    def test_ids_optional_for_practice_and_original(self):
+        for name, extra in (("practice-ab.json", ["--condition", "A", "--client-origin", "auto"]),
+                            ("baseline.json", ["--experiment", "E2", "--condition", "original"])):
+            with self.subTest(extra=extra):
+                code, out = self.run_main("cases.json", name, *extra)
+                self.assertEqual(code, 0)
+                self.assertIsNone(json.loads(out.read_text(encoding="utf-8"))["conditions"]["repeat"])
+
+    def test_number_columns_have_no_exponent(self):
+        self.assertEqual([n07.csv_number(value) for value in (0.0, 100.0, 2.5, 0.00001)],
+                         ["0", "100", "2.5", "0.00001"])
+        self.assertEqual(str(n07.bounded_float(100)("-0")), "0.0")
 
     def test_mismatch_run_exits_nonzero_but_completes(self):
         code, out = self.run_main("cases-mismatch.json", "wrong.json")
