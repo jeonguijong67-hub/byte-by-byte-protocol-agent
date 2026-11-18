@@ -22,6 +22,15 @@ DEFAULT_KEYS = {"timeout_s", "chunk_delay_ms"}
 CSV_FIELDS = ["case_id", "verdict", "expected_text", "actual_text", "expected_hex",
               "actual_hex", "first_diff_offset", "server_closed", "error", "elapsed_ms",
               "description"]
+# N03 results.csv: run conditions, then the N07 columns, then per-row provenance.
+CONDITION_FIELDS = ["run_id", "experiment", "condition", "repeat", "client_version",
+                    "client_origin", "test_type", "net_delay_ms", "loss_pct"]
+RESULT_FIELDS = CONDITION_FIELDS + CSV_FIELDS + ["started_at", "code_commit", "notes"]
+EXPERIMENTS = ("practice", "E1", "E2", "E3")
+CONDITIONS = ("A", "B", "original", "practice")
+CLIENT_ORIGINS = ("auto", "manual", "original")
+# parser_chunk is tested without sockets, so it is not an N07 test type.
+TEST_TYPES = ("socket", "unseen_input", "delay_loss")
 
 
 def now():
@@ -117,7 +126,7 @@ def load_cases(path):
 def exchange(host, port, case):
     """Run one case. The reply ends when the server closes the connection.
     timeout_s bounds the whole case after connecting, not each recv."""
-    outcome = {"server_closed": False, "error": None}
+    outcome = {"server_closed": False, "error": None, "started_at": now()}
     response = bytearray()
     started = time.monotonic()
     try:
@@ -187,6 +196,7 @@ def judge(case, outcome):
         "server_closed": outcome["server_closed"],
         "error": outcome["error"],
         "elapsed_ms": outcome["elapsed_ms"],
+        "started_at": outcome["started_at"],
     }
 
 
@@ -252,15 +262,46 @@ def git_state():
         return None, None
 
 
-def write_csv(path, results):
+def csv_number(value):
+    """0.0 -> "0", 2.5 -> "2.5", as in the N03 examples."""
+    return str(int(value)) if value.is_integer() else repr(value)
+
+
+def write_csv(path, results, conditions, code_commit):
+    fixed = {key: conditions[key] for key in CONDITION_FIELDS}
+    fixed["repeat"] = "" if conditions["repeat"] is None else conditions["repeat"]
+    fixed["net_delay_ms"] = csv_number(conditions["net_delay_ms"])
+    fixed["loss_pct"] = csv_number(conditions["loss_pct"])
     with open(path, "x", newline="", encoding="utf-8") as stream:
-        writer = csv.DictWriter(stream, fieldnames=CSV_FIELDS, extrasaction="ignore")
+        writer = csv.DictWriter(stream, fieldnames=RESULT_FIELDS, extrasaction="ignore")
         writer.writeheader()
         for item in results:
-            row = dict(item)
+            row = {**item, **fixed, "code_commit": code_commit, "notes": conditions["notes"]}
             row["error"] = item["error"]["type"] if item["error"] else ""
             row["first_diff_offset"] = "" if item["first_diff_offset"] is None else item["first_diff_offset"]
             writer.writerow(row)
+
+
+def positive_int(text):
+    try:
+        value = int(text)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"not an integer: {text}") from None
+    if value < 1:
+        raise argparse.ArgumentTypeError("must be 1 or more")
+    return value
+
+
+def bounded_float(maximum):
+    def parse(text):
+        try:
+            value = float(text)
+        except ValueError:
+            raise argparse.ArgumentTypeError(f"not a number: {text}") from None
+        if not math.isfinite(value) or value < 0 or value > maximum:
+            raise argparse.ArgumentTypeError(f"must be between 0 and {maximum}")
+        return value
+    return parse
 
 
 def parse_args(argv):
@@ -270,6 +311,18 @@ def parse_args(argv):
     target.add_argument("--binary", help="server binary; started on a free loopback port and stopped afterwards")
     target.add_argument("--target", help="already running server as HOST:PORT")
     parser.add_argument("--out", required=True, help="new result JSON path; CSV is written next to it")
+    cond = parser.add_argument_group("N03 condition columns (copied to every CSV row)")
+    cond.add_argument("--run-id", help="evaluation run ID (default: the --out file name without .json)")
+    cond.add_argument("--experiment", choices=EXPERIMENTS, default="practice")
+    cond.add_argument("--condition", choices=CONDITIONS, default="practice")
+    cond.add_argument("--repeat", type=positive_int, help="repeat number within the condition")
+    cond.add_argument("--client-version", default="",
+                      help="analysis_run_id of the client under test (manual edits: <id>-m1 ...)")
+    cond.add_argument("--client-origin", choices=CLIENT_ORIGINS, default="original")
+    cond.add_argument("--test-type", choices=TEST_TYPES, default="socket")
+    cond.add_argument("--net-delay-ms", type=bounded_float(math.inf), default=0.0)
+    cond.add_argument("--loss-pct", type=bounded_float(100), default=0.0)
+    cond.add_argument("--notes", default="")
     return parser.parse_args(argv)
 
 
@@ -286,11 +339,18 @@ def main(argv=None):
     with out.open("x", encoding="utf-8"):
         pass
     commit, dirty = git_state()
-    result = {"task": "N07", "classification": "practice evaluation (known public spec)",
-              "experiment_score": False, "started_at": now(), "stage": "cases",
+    conditions = {key: getattr(args, key) for key in CONDITION_FIELDS if key != "run_id"}
+    conditions = {"run_id": args.run_id or out.stem, **conditions, "notes": args.notes}
+    practice = args.experiment == "practice"
+    result = {"task": "N07",
+              "classification": ("practice evaluation (known public spec)" if practice
+                                 else f"{args.experiment} evaluation"),
+              "experiment_score": not practice, "conditions": conditions,
+              "started_at": now(), "stage": "cases",
               "success": False, "argv": [sys.argv[0], *(sys.argv[1:] if argv is None else argv)],
               "python": platform.python_version(), "platform": platform.platform(),
               "code_commit": commit, "code_dirty": dirty}
+    commit_label = "" if commit is None else commit + ("-dirty" if dirty else "")
     process = None
     try:
         cases_path = Path(args.cases).resolve(strict=True)
@@ -321,7 +381,7 @@ def main(argv=None):
         result["target"] = {"host": host, "port": port}
         result["summary"] = summarize(results)
         result["results"] = results
-        write_csv(csv_path, results)
+        write_csv(csv_path, results, conditions, commit_label)
         result["csv"] = str(csv_path)
         result.update(stage="complete", success=True)
     except Exception as error:
