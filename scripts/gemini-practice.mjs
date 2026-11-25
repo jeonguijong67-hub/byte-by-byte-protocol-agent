@@ -27,6 +27,11 @@ try {
   const dirty=await defaultRunCommand('git',['status','--porcelain'],{env:safeEnv,timeoutMs:10000});
   if(commit.exitCode!==0||dirty.exitCode!==0)throw new Error('Cannot record execution Git state');
   summary.code_commit=commit.stdout.trim();summary.code_dirty=Boolean(dirty.stdout.trim());
+  if (summary.code_dirty && options['--allow-dirty'] !== 'true') {
+    const error = new Error('Commit local changes before running the pilot, or opt in with --allow-dirty');
+    error.code = 'DIRTY_CHECKOUT';
+    throw error;
+  }
   summary.source_fingerprint=await fingerprintSources();summary.model=process.env.LLM_MODEL||null;
   const compile=await defaultRunCommand('gcc',['-O0','-fno-inline','-Wall','-Wextra','-o',binary,'practice/n06/server.c'],{env:safeEnv,timeoutMs:30000});
   if(compile.exitCode!==0)throw new Error('Public practice server compilation failed');
@@ -56,7 +61,6 @@ try {
         await record('N12-reference-'+condition,{...attempt,file:bridgePath,success:bridge.success,
           evaluation_status:bridge.evaluation_status,summary:bridge.summary,error:bridge.error||null});
       }
-      if(result.api&&result.api.status!==200)break;
     }
   }
   summary.success=summary.results.length>0&&summary.results.every(result=>result.success);

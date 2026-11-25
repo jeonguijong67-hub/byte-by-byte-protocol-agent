@@ -67,7 +67,7 @@ node --env-file=.env.gemini scripts/gemini-pilot.mjs --execution live
 docker compose -f compose.n05.yaml run --rm n05 node scripts/n12-practice-bridge.mjs --analysis runs/gemini/태그/A-analysis.json --binary runs/gemini/태그/practice-server --out runs/gemini/태그/A-new-client.json
 ```
 
-이 평가는 공개 연습의 정상 명령과 선택 입력에 대한 연결 증거다. N11 비공개 정답 채점,
+이 평가는 공개 연습의 정상 명령과 선택 입력에 대한 **프레임 레이아웃 호환성** 확인이다. N11 비공개 정답 채점,
 오류 규칙 전체, 실제 TCP 분할 보장, 부하 성능, 본 실험 기능 동등성을 입증하지 않는다.
 전송 write 분할과 실제 TCP 세그먼트 분할도 구분한다.
 
@@ -75,7 +75,11 @@ docker compose -f compose.n05.yaml run --rm n05 node scripts/n12-practice-bridge
 
 공개 연습 실행기는 조건별 첫 시도에 `repeat: 1`을 기록한다. N09 단독 실행에서 계획한 조건과 반복 번호를 지정할 때는 기존 명령에 `--condition A --repeat 1`을 추가한다. 준비 파일을 읽거나 검증하는 단계에서 실패해도 지정한 조건과 번호가 해당 분석 ID에 남는다.
 
+공개 연습에서는 한 조건의 HTTP 오류를 보존하고 다음 조건을 시도한다. 같은 조건을 자동 재시도하지 않는다. 미커밋 변경이 있으면 컴파일과 모델 요청 전에 중단한다. 로컬 공개 연습에서만 `--allow-dirty`로 명시적으로 실행할 수 있다.
+
 분석이 실패하면 `A-analysis.json` 또는 `B-analysis.json`의 ID·조건·반복 번호·오류를 같은 조건의 `*-client.json`과 `summary.json`에서 확인한다. 이때 클라이언트 결과는 `success: false`, `evaluation_status: "not_run"`이고 TCP 평가 파일은 생성되지 않는다. N09와 N12 행은 같은 시도의 두 단계이므로 분석 시도 수는 고유한 `analysis_run_id`로 센다. 기존 기록에 반복 번호가 없으면 `null`로 남는다.
+
+실제 분석 후보의 명세를 공개 연습 브리지가 실행할 수 없으면 `evaluation_status: "spec_unexecutable"`과 사유를 기록한다. 분석 자체가 실패한 경우와 구분되며 TCP 평가는 시작하지 않는다.
 
 ```powershell
 node --test scripts/rea-smoke.test.mjs scripts/rea-detail.test.mjs scripts/n09-contract.test.mjs scripts/n09-prepare.test.mjs scripts/n09-live.test.mjs scripts/n09-check-pair.test.mjs scripts/wire-spec.test.mjs

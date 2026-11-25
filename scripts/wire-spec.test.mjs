@@ -25,6 +25,14 @@ test('decoder waits across every partial frame and separates combined frames',()
   assert.equal(first.remaining_hex,frame.toString('hex'));
   assert.equal(decodeMessage(spec,'response',Buffer.from(first.remaining_hex,'hex')).values.answer,6);
 });
+test('decoder bounds each frame even when several frames share a buffer',()=>{
+  const frame=encodeMessage(spec,'request',{items:Array(1500).fill(1)});
+  const result=decodeMessage(spec,'request',Buffer.concat([frame,frame]));
+  assert.equal(result.bytes_consumed,frame.length);
+  assert.equal(result.remaining_hex,frame.toString('hex'));
+  const partial=Buffer.from('424201011000','hex');
+  assert.throws(()=>decodeMessage(spec,'request',partial),/Invalid declared frame length/);
+});
 test('decoder rejects wrong constants and inconsistent declared byte lengths',()=>{
   assert.throws(()=>decodeMessage(spec,'response',Buffer.from('41420181000400000006','hex')),/Constant mismatch/);
   assert.throws(()=>decodeMessage(spec,'response',Buffer.from('42420181000200000006','hex')),/Incorrect byte length/);
@@ -59,4 +67,17 @@ test('bridge refuses failed or mock model analyses before starting the server',a
   assert.equal(result.success,false);assert.match(result.error.message,/validated real model/);
   assert.equal(result.evaluation_file,undefined);
   assert.equal(JSON.parse(await readFile(resultPath,'utf8')).success,false);
+});
+
+test('bridge distinguishes a real candidate with an unsupported spec from an upstream failure',async()=>{
+  await mkdir('runs/wire-tests',{recursive:true});
+  const dir=await mkdtemp(path.resolve('runs/wire-tests/unexecutable-'));
+  const analysisPath=path.join(dir,'analysis.json'),resultPath=path.join(dir,'result.json');
+  await writeFile(analysisPath,JSON.stringify({success:true,model_called:true,
+    runtime:{execution_backend:'real'},spec:{format:'wire-spec-v1'}}));
+  const result=await evaluatePractice({analysisPath,resultPath,binaryPath:'must-not-execute'});
+  assert.equal(result.success,false);
+  assert.equal(result.classification,'public-practice-frame-layout-compatibility');
+  assert.equal(result.evaluation_status,'spec_unexecutable');
+  assert.equal(result.evaluation_file,undefined);
 });

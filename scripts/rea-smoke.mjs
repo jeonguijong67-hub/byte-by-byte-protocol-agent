@@ -182,6 +182,8 @@ export async function runSmoke({ binaryPath, resultPath, mode = 'full', env = pr
         quote: 'Mock fixture only: practice binary returns PONG for PING.' }], unknowns: ['Actual binary behavior is untested.'] }) } }] });
     else {
       result.usage.api_requests++;
+      for (const field of ['prompt_tokens','completion_tokens','total_tokens'])
+        result.usage[field]=null;
       const response = await fetchImpl(env.LLM_CHAT_COMPLETIONS_URL, {
         method: 'POST', redirect: 'error', signal: AbortSignal.timeout(120000),
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` }, body: JSON.stringify(body) });

@@ -70,12 +70,14 @@ test('dry-run needs no credentials, makes zero requests and stores an offline re
   assert.equal(r.model_called,false);assert.equal(r.spec,null);
   assert.equal(r.configuration.ready,false);
   assert.equal(r.configuration.missing.length,3);
+  assert.equal(r.model.temperature,null);
+  assert.equal(r.runtime.max_model_calls,1);
   const q=JSON.parse(await readFile(r.request_file,'utf8'));
   assert.equal(q.messages[0].content,PROMPT);
   assert.equal(q.max_completion_tokens,4096);
 });
 test('live protocol fixture records real usage fields but cannot claim an actual model experiment',async()=>{
-  const f=await fixture(),r=await f.run();
+  const f=await fixture(),r=await f.run({env:{...f.env,LLM_TEMPERATURE:'0'}});
   assert.equal(r.success,true);assert.equal(f.requests.length,1);
   assert.equal(r.model_called,false);assert.equal(r.model_response_received,true);
   assert.equal(r.classification,'injected-api-protocol-test');
@@ -84,6 +86,9 @@ test('live protocol fixture records real usage fields but cannot claim an actual
   assert.notEqual(r.analysis_run_id,r.preparation_run_id);
   assert.equal(r.usage.total_tokens,168);
   assert.equal(r.usage.api_requests,1);
+  assert.equal(r.model.temperature,0);
+  assert.equal(f.requests[0].payload.temperature,0);
+  assert.equal(r.response_id,'test-response');
   assert.equal(r.experiment_score,false);assert.equal(r.n09_complete,false);
   assert.equal(r.verification.semantic_review,'pending');
   assert.equal(r.verification.actual_protocol_reconstruction_confirmed,false);

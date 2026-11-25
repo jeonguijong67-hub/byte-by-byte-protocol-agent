@@ -76,6 +76,7 @@ docker compose -f compose.n05.yaml run --rm -e LLM_MAX_TOKENS_PARAM -e LLM_JSON_
 - run_id와 analysis_run_id: 이번 모델 실행의 동일한 고유 ID. CSV/체크리스트가 이 ID를 계승하거나 매핑한다.
 - preparation_run_id: 원래 입력 준비 실행의 ID. 같은 준비 입력을 재사용해도 모델 실행 ID는 매번 새로 만든다.
 - model.requested/returned: 요청한 ID와 API가 반환한 모델 식별자. operator_confirmed는 자동으로 true로 바꾸지 않는다.
+- model.temperature에는 요청에 지정한 온도를 기록한다. 제공자 기본값을 쓰면 null로 남긴다. 이 실행기는 seed를 보내지 않는다. response_id와 시작·종료 시각으로 응답을 추적한다.
 - usage.api_requests: 실제 요청 시도 횟수. HTTP429/실패도 1회로 기록하며 자동 재시도하지 않는다.
 - usage.prompt_tokens/completion_tokens/total_tokens: API가 보고한 값. 누락되면 null이고 임의 추정치를 채우지 않는다.
 - usage.provider: 캐시·추론 토큰 등을 포함한 원본 usage 구조. 학교 크레딧으로 자동 환산하지 않는다.
@@ -88,7 +89,7 @@ N12가 요구하는 실행 가능 명세의 스키마는 별도 합의해야 한
 
 ## 호출·토큰 예산
 
-현재 실행기는 한 시행당 **1회만** API를 호출한다. 기존 공통 예산의 최대2호출보다 작은 범위다.
+현재 실행기는 한 시행당 **1회만** API를 호출하며 그 상한을 runtime.max_model_calls에 기록한다. 기존 공통 예산의 최대2호출보다 작은 범위다.
 출력 상한4096, 시간 제한120초, 서버 질의0회, 자동 재시도0회다.
 제공사에 따라 추론 토큰이 출력 한도를 공유할 수 있으므로, 실제 응답의 usage/finish_reason으로 확인한다.
 

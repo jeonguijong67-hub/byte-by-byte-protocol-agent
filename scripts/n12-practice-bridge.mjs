@@ -13,7 +13,9 @@ export function buildPracticeCases(spec, vectors) {
   const responseOutputs=spec.response.fields.filter(f=>!['const','length'].includes(f.type));
   if(requestInputs.length!==1||requestInputs[0].type!=='uint_array'||
       responseOutputs.length!==1||responseOutputs[0].type!=='uint')
-    throw new Error('Public N06 bridge needs exactly one recovered integer-array input and one integer output');
+    throw Object.assign(
+      new Error('Public N06 bridge needs exactly one recovered integer-array input and one integer output'),
+      {code:'WIRE_SPEC'});
   if(!Array.isArray(vectors.cases)||vectors.cases.length===0)throw new Error('Missing public oracle vectors');
   const cases=[];
   for(const vector of vectors.cases) {
@@ -32,7 +34,7 @@ export function buildPracticeCases(spec, vectors) {
 export async function evaluatePractice({analysisPath,binaryPath,resultPath,env=process.env}) {
   const output=path.resolve(resultPath);await mkdir(path.dirname(output),{recursive:true});
   const reserved=await open(output,'wx',0o600);await reserved.close();
-  const result={task:'N12-reference',classification:'public-practice-recovered-wire-client',
+  const result={task:'N12-reference',classification:'public-practice-frame-layout-compatibility',
     experiment_score:false,success:false,started_at:new Date().toISOString(),analysis_run_id:null,
     condition:null,repeat:null,evaluation_status:'not_run'};
   try {
@@ -71,6 +73,8 @@ export async function evaluatePractice({analysisPath,binaryPath,resultPath,env=p
       evaluated.server_stopped===true&&result.decoded_responses.every(r=>r.complete&&r.remaining_hex==='');
     result.evaluation_status=result.success?'passed':'failed';
   } catch(error) {
+    if(error.code==='WIRE_SPEC' && result.evaluation_status==='not_run')
+      result.evaluation_status='spec_unexecutable';
     result.error={code:error.code||error.name,message:error.message};
     if(error.stage) result.error.stage=error.stage;
   }
