@@ -7,7 +7,7 @@
 | 파일 | 역할 |
 | --- | --- |
 | `scripts/n07-evaluate.py` | 평가기. Python 3.11+ 표준 라이브러리만 사용 |
-| `scripts/test_n07_evaluate.py` | 모의 테스트 21개. C 서버 대신 같은 동작의 Python 서버와 시간 예산 대역을 사용 |
+| `scripts/test_n07_evaluate.py` | 모의 테스트 27개. C 서버 대신 같은 동작의 Python 서버와 시간 예산 대역을 사용 |
 | `practice/n07/cases.json` | 연습 서버의 실제 명세(README)대로 쓴 기대값 10개 — 모두 `pass`가 기대 결과 |
 | `practice/n07/cases-mismatch.json` | 일부러 틀린 명세(음성 대조군) 6개 — 대조군 1개만 `pass`, 나머지는 `fail`/`error`가 기대 결과 |
 
@@ -22,7 +22,23 @@
 
 ## 출력
 
-`--out runs/n07/<이름>.json`과 같은 위치에 `<이름>.csv`, 바이너리 모드라면 `<이름>.json.server.stderr`를 만든다. 기존 파일은 덮어쓰지 않는다. JSON에는 시작/종료 시각, 코드 커밋과 dirty 여부, Python/플랫폼, 케이스 파일 SHA-256, 서버 바이너리 SHA-256, 서버 명령과 종료 확인(`server_stopped`, 평가 도중 서버가 죽었으면 `server_exit_code_during_eval`에 종료 코드), 요약(`total/pass/fail/error/pass_rate/all_pass`), 케이스별 요청 hex·기대/실제 hex·텍스트·차이 위치·소요 시간을 기록한다. CSV는 케이스당 한 줄이다. 원본 결과는 Git에서 제외되는 `runs/`에 둔다.
+`--out runs/n07/<이름>.json`과 같은 위치에 `<이름>.csv`, 바이너리 모드라면 `<이름>.json.server.stderr`를 만든다. 기존 파일은 덮어쓰지 않는다. JSON에는 시작/종료 시각, 코드 커밋과 dirty 여부, Python/플랫폼, 케이스 파일 SHA-256, 서버 바이너리 SHA-256, 서버 명령과 종료 확인(`server_stopped`, 평가 도중 서버가 죽었으면 `server_exit_code_during_eval`에 종료 코드), 요약(`total/pass/fail/error/pass_rate/all_pass`), 케이스별 요청 hex·기대/실제 hex·텍스트·차이 위치·소요 시간·시작 시각을 기록한다. 원본 결과는 Git에서 제외되는 `runs/`에 둔다.
+
+CSV는 케이스당 한 줄이며 열은 N03 [`results.csv`](n03-evaluation-format.md#21-resultscsv) 23개(`RESULT_FIELDS`)다. 조건 열은 아래 선택 인자로 채우고, 실행의 모든 줄에 같은 값이 들어간다. JSON에도 `conditions`로 남는다.
+
+| 인자 | 기본값 | 허용 값 |
+| --- | --- | --- |
+| `--run-id` | `--out` 파일 이름(`.json` 제외) | 문자열 |
+| `--experiment` | `practice` | `practice`/`E1`/`E2`/`E3` |
+| `--condition` | `practice` | `A`/`B`/`original`/`practice` |
+| `--repeat` | 빈 칸 | 1 이상 정수 |
+| `--client-version` | `--client-origin original`이면 `original`, 아니면 빈 칸 | 평가한 클라이언트를 만든 `analysis_run_id`(수정본 `-m1`…), 원본 `original` |
+| `--client-origin` | `original` | `auto`/`manual`/`original` |
+| `--test-type` | `socket` | `socket`/`unseen_input`/`delay_loss` (`parser_chunk`는 소켓을 쓰지 않으므로 N07 대상 아님) |
+| `--net-delay-ms`, `--loss-pct` | 0 | 0 이상 유한값. 지연은 600000 ms, 손실률은 100 이하 |
+| `--notes` | 빈 칸 | 문자열 |
+
+`--experiment`가 `practice`가 아니면 `experiment_score: true`이고 `classification`이 `<실험> evaluation`이 된다. 허용되지 않는 값과 잘못된 조합(`practice`가 아닌 실험에 `--condition practice`, `--condition original`에 `original`이 아닌 출처, `A`/`B`에 `original` 출처, 본 실험(`E1`/`E2`/`E3`)의 `A`/`B` 실행에서 `--client-version`(분석 ID)이나 `--repeat`가 빠진 경우)은 결과 파일을 만들기 전에 거부한다(종료 코드 2). 연습과 원본 클라이언트 기준선은 두 값 없이 실행할 수 있다. 숫자 열은 지수 표기 없이 쓴다(`0`, `2.5`). `started_at`은 케이스별 시작 시각(UTC), `code_commit`은 평가기 커밋(작업 트리가 dirty면 `-dirty` 접미)이다.
 
 ## 실행
 
