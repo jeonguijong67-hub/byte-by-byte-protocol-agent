@@ -75,11 +75,14 @@ test('pair checker retains the clean-checkout default', async () => {
   assert.equal(result.reproducibility.sources_verified,true);
 });
 
-test('clean E1 pair saves its experiment label without scoring', async () => {
+test('clean E1 pair saves its experiment label, packet format and binary profile without scoring', async () => {
   const f = await fixture(false, 'E1');
   await f.run();
   const saved = JSON.parse(await readFile(f.outPath,'utf8'));
   assert.equal(saved.experiment,'E1');
+  assert.equal(saved.packet_format,'tcp-streams-v1');
+  assert.deepEqual(saved.rea_detail_profile,f.bundle.profile);
+  assert.equal(saved.rea_detail_profile.selected_procedure,null);
   assert.equal(saved.model_calls,0);
   assert.equal(saved.experiment_score,false);
 });
@@ -134,6 +137,11 @@ test('E1 requires the named profile in both the runtime and the B bundle', async
   await f.saveBundle(f.bundle);
   await f.persist();
   await assert.rejects(f.run(), /evidence bundle requires the named-procedure-v1 profile/);
+  f.bundle.profile.version = 'named-procedure-v1';
+  f.b.runtime.rea_detail_profile.selected_procedure = {address:'fixture'};
+  await f.saveBundle(f.bundle);
+  await f.persist();
+  await assert.rejects(f.run(), /runtime profile differs from its evidence bundle/);
   await assert.rejects(readFile(f.outPath), {code:'ENOENT'});
 });
 

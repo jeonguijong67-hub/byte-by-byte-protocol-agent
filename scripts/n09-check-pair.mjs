@@ -79,13 +79,19 @@ assert.equal(rea.execution_backend, 'real');
 assert.equal(rea.evidence.validation.upstream_provider, 'ghidra');
 assert.equal(rea.evidence.validation.subject_sha256, b.input.binary.sha256);
 const binaryRaw = await readFile(rea.evidence.raw_file, 'utf8');
+let reaDetailProfile = null;
 if(b.evidence[1].operation==='rea-evidence-bundle-v1') {
   const bundleRaw=await readFile(b.evidence[1].raw_file,'utf8'),bundle=JSON.parse(bundleRaw);
   assert.equal(hash(bundleRaw),b.evidence[1].raw_sha256);
-  if (experiment === 'E1') assert.equal(bundle.profile?.version, 'named-procedure-v1',
-    'E1 condition B evidence bundle requires the named-procedure-v1 profile');
+  if (experiment === 'E1') {
+    assert.equal(bundle.profile?.version, 'named-procedure-v1',
+      'E1 condition B evidence bundle requires the named-procedure-v1 profile');
+    assert.deepEqual(b.runtime.rea_detail_profile, bundle.profile,
+      'E1 condition B runtime profile differs from its evidence bundle');
+  }
   await validateDetailBundle(bundle,b.input.binary.sha256);
   assert.equal(bundle.records[0].raw_sha256,hash(binaryRaw));
+  reaDetailProfile = bundle.profile ?? null;
 } else assert.equal(hash(binaryRaw), b.evidence[1].raw_sha256);
 const summary = {
   task: 'N09', experiment, classification: 'real-local-tools-key-free-preparation',
@@ -97,6 +103,8 @@ const summary = {
     reference_run_eligible: !a.runtime.code_dirty,
     local_practice_dirty_allowed: allowDirty },
   input: { pcap: a.input.pcap, binary: b.input.binary },
+  packet_format: a.runtime.packet_format ?? null,
+  rea_detail_profile: reaDetailProfile,
   same_packet_sha256: a.evidence[0].raw_sha256,
   same_system_prompt_sha256: hash(aRequest.messages[0].content),
   same_budget: a.budget,
