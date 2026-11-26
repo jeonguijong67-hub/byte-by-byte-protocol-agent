@@ -155,10 +155,10 @@ export async function runLive({preparedPath,resultPath,execution='dry-run',condi
     model_called:false, model_response_received:false, experiment_score:false,
     n05_complete:false,n09_complete:false, condition,repeat,experiment:null,
     source_preparation:null,request_file:null,artifacts,budget:{...BUDGET},
-    model:{requested:null,returned:null,endpoint:null,operator_confirmed:false},
+    model:{requested:null,returned:null,endpoint:null,temperature:null,operator_confirmed:false},
     usage:{api_requests:0,reported:false,prompt_tokens:null,completion_tokens:null,total_tokens:null},
     runtime:{node:process.version,platform:process.platform,arch:process.arch,
-      timeout_ms:timeoutMs,execution_backend:injected?'injected-test':'real',
+      timeout_ms:timeoutMs,max_model_calls:1,execution_backend:injected?'injected-test':'real',
       runner_sha256:hash(await readFile(fileURLToPath(import.meta.url)))},
     input:null,spec:null,observations:[],unknowns:[],verification:null,
     limitations:['Candidate JSON and exact evidence quotes do not establish protocol correctness.',
@@ -196,6 +196,7 @@ export async function runLive({preparedPath,resultPath,execution='dry-run',condi
       token_parameter:config.tokenParameter};
     result.model.requested=config.payload.model;
     result.model.endpoint=config.url;
+    result.model.temperature=config.payload.temperature ?? null;
     const payload={...config.payload,messages:prepared.request.messages};
     result.request_file=path.join(artifacts,'request.json');
     await stage('request_snapshot',async()=>{

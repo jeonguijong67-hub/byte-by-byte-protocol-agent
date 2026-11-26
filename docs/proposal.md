@@ -18,7 +18,7 @@ We will use an LLM agent and REA to reconstruct the message formats and interact
 - One team-owned C TCP test service; start with three commands and add a fourth only if schedule permits.
 - The challenge author keeps reference source, specification, answer key and held-out tests outside the analysis workspace and this public repository until the initial evaluation is frozen.
 - Any command excluded from the packet captures must still be implemented and reachable in the provided analysis binary.
-- Use the course-designated LLM. Current course slides name Upstage Solar, while an earlier LMS notice discussed GLM support; confirm the applicable model and test real tool invocation before building the full pipeline.
+- The team can choose its model, as confirmed by the team lead on 2026-11-25. Use the same model and settings for both conditions. Record the model ID and provider-returned version when available. See [model selection and run settings](n09-live-model.md).
 - Keep the same model, prompt-development effort and comparable resource limits across conditions; document the information each condition receives.
 - Treat the comparison as the effect of adding binary-analysis evidence, not proof of the isolated superiority of a particular tool.
 

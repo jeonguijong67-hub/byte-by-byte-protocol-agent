@@ -40,6 +40,16 @@ assert.equal(a.input.binary, undefined);
 assert.equal(a.runtime.rea_result_file, undefined);
 assert.equal(a.evidence.length, 1);
 assert.equal(b.evidence.length, 2);
+if (experiment === 'E1') {
+  for (const result of [a, b]) {
+    assert.equal(result.runtime.packet_format, 'tcp-streams-v1',
+      `E1 condition ${result.condition} requires --packet-format tcp-streams-v1`);
+  }
+  assert.equal(b.evidence[1].operation, 'rea-evidence-bundle-v1',
+    'E1 condition B requires --binary-profile named-procedure-v1');
+  assert.equal(b.runtime.rea_detail_profile?.version, 'named-procedure-v1',
+    'E1 condition B requires a recorded named-procedure-v1 profile');
+}
 assert.deepEqual(a.input.pcap, b.input.pcap);
 assert.deepEqual(a.evidence[0].text, b.evidence[0].text);
 assert.equal(a.evidence[0].raw_sha256, b.evidence[0].raw_sha256);
@@ -52,6 +62,15 @@ if (a.runtime.code_dirty || a.runtime.source_fingerprint || b.runtime.source_fin
   assert.deepEqual(sourceFingerprint, b.runtime.source_fingerprint, 'A/B runner sources differ');
   assert.deepEqual(sourceFingerprint, await fingerprintSources(), 'Runner sources changed since preparation');
 }
+if (experiment === 'E1') {
+  for (const { condition, evidence: [packet], input } of [a, b]) {
+    const raw = await readFile(packet.raw_file, 'utf8');
+    assert.equal(hash(raw), packet.raw_sha256, `E1 condition ${condition} packet evidence digest differs`);
+    const streams = JSON.parse(raw);
+    assert.equal(streams.format, 'tcp-streams-v1', `E1 condition ${condition} requires TCP stream evidence`);
+    assert.equal(streams.pcap_sha256, input.pcap.sha256, `E1 condition ${condition} stream evidence PCAP digest differs`);
+  }
+}
 const [aRequest, bRequest, rea] = await Promise.all([read(a.request_file), read(b.request_file), read(b.runtime.rea_result_file)]);
 assert.deepEqual(aRequest.messages[0], bRequest.messages[0]);
 assert.equal(rea.success, true);
@@ -60,11 +79,19 @@ assert.equal(rea.execution_backend, 'real');
 assert.equal(rea.evidence.validation.upstream_provider, 'ghidra');
 assert.equal(rea.evidence.validation.subject_sha256, b.input.binary.sha256);
 const binaryRaw = await readFile(rea.evidence.raw_file, 'utf8');
+let reaDetailProfile = null;
 if(b.evidence[1].operation==='rea-evidence-bundle-v1') {
   const bundleRaw=await readFile(b.evidence[1].raw_file,'utf8'),bundle=JSON.parse(bundleRaw);
   assert.equal(hash(bundleRaw),b.evidence[1].raw_sha256);
+  if (experiment === 'E1') {
+    assert.equal(bundle.profile?.version, 'named-procedure-v1',
+      'E1 condition B evidence bundle requires the named-procedure-v1 profile');
+    assert.deepEqual(b.runtime.rea_detail_profile, bundle.profile,
+      'E1 condition B runtime profile differs from its evidence bundle');
+  }
   await validateDetailBundle(bundle,b.input.binary.sha256);
   assert.equal(bundle.records[0].raw_sha256,hash(binaryRaw));
+  reaDetailProfile = bundle.profile ?? null;
 } else assert.equal(hash(binaryRaw), b.evidence[1].raw_sha256);
 const summary = {
   task: 'N09', experiment, classification: 'real-local-tools-key-free-preparation',
@@ -76,6 +103,8 @@ const summary = {
     reference_run_eligible: !a.runtime.code_dirty,
     local_practice_dirty_allowed: allowDirty },
   input: { pcap: a.input.pcap, binary: b.input.binary },
+  packet_format: a.runtime.packet_format ?? null,
+  rea_detail_profile: reaDetailProfile,
   same_packet_sha256: a.evidence[0].raw_sha256,
   same_system_prompt_sha256: hash(aRequest.messages[0].content),
   same_budget: a.budget,

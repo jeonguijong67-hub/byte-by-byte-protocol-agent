@@ -12,9 +12,9 @@ export const WIRE_SPEC_GUIDANCE = [
   'Executable subset: spec={"format":"wire-spec-v1","transport":"tcp","request":{"fields":[...]},"response":{"fields":[...]},"semantics":"supported behavior and limits"}.',
   'Each fields entry has a unique name and type. Supported entries: {name,type:"const",hex:"even-length hex"}; {name,type:"uint",bytes:1|2|4,endian:"big"|"little"}; {name,type:"length",bytes:1|2|4,endian:"big"|"little",of:"name of one later field whose BYTES are counted"}; {name,type:"uint_array",bytes:1|2|4,endian:"big"|"little"}; {name,type:"bytes"}.',
   'Variable uint_array/bytes must be the final field and have a preceding length field referring to them. Lengths may also refer to later fixed scalar fields. Const fields are literal bytes including recovered discriminators. uint and uint_array fields take application input under their name.',
-  'Choose ONE evidence-supported successful message type for the executable subset. For that message type, encode fixed version/command/status/discriminator bytes as const, including their observed values; reserve uint/uint_array for variable application arguments or results. Describe other message types and uncertain discriminator values in semantics/unknowns.',
+  'Choose ONE evidence-supported successful message type for the executable subset. For that message type, encode fixed version/command/status/discriminator bytes as const, including their observed values; reserve uint/uint_array for variable application arguments or results.',
   'Before returning, mentally serialize and parse your candidate against the supplied complete application streams: every byte must be accounted for in order, scalar widths and byte lengths must agree, and the selected request and response must represent the same exchange. Do not silently omit header bytes or treat fixed control bytes as caller-supplied arguments.',
-  'Only this one-request/one-response subset is executable by the reference client. Put other commands, errors, state rules and ambiguity in semantics/unknowns; do not invent them or force an unsupported protocol into the subset.',
+  'Only this one-request/one-response subset is executable by the reference client. Record all evidence-supported application behavior in spec.semantics, including supported operations, other message types, errors and state rules when the evidence supports them. Use unknowns for unresolved or unsupported details. Do not force unsupported layouts into the executable subset.',
   'Every observation quote must be one exact unchanged contiguous substring from evidence.text. Prefer a SINGLE short existing line; never join separated dump lines or paraphrase numbers. No ellipses inside quotes.',
 ].join(' ');
 
@@ -34,7 +34,7 @@ export function validateWireSpec(spec) {
       if(['uint','length','uint_array'].includes(field.type))
         need([1,2,4].includes(field.bytes)&&['big','little'].includes(field.endian),'Numeric fields need width and byte order');
       if(field.type==='length') {
-        need(typeof field.of==='string'&&fields.slice(index+1).some(f=>f.name===field.of),'Length must count a later field');
+        need(typeof field.of==='string'&&fields.slice(index+1).some(f=>f?.name===field.of),'Length must count a later field');
       }
       if(['bytes','uint_array'].includes(field.type)) {
         need(index===fields.length-1,'Variable field must be last');
@@ -78,12 +78,12 @@ export function encodeMessage(spec,direction,values={}) {
 
 export function decodeMessage(spec,direction,bytes) {
   validateWireSpec(spec);need(['request','response'].includes(direction),'Invalid message direction');
-  need(Buffer.isBuffer(bytes)&&bytes.length<=maxBytes,'Expected bounded bytes');
+  need(Buffer.isBuffer(bytes),'Expected bytes');
   const values=Object.create(null),lengths=new Map(),spans=new Map();let offset=0;
   for(const field of spec[direction].fields) {
     const start=offset;
     const size=field.type==='const'?field.hex.length/2:['bytes','uint_array'].includes(field.type)?lengths.get(field.name):field.bytes;
-    need(Number.isSafeInteger(size)&&size>=0&&size<=maxBytes,'Invalid declared frame length');
+    need(Number.isSafeInteger(size)&&size>=0&&offset+size<=maxBytes,'Invalid declared frame length');
     if(bytes.length-offset<size)return {complete:false,needed:offset+size};
     const piece=bytes.subarray(offset,offset+size);offset+=size;
     if(field.type==='const')need(piece.equals(Buffer.from(field.hex,'hex')),`Constant mismatch at ${field.name}`);

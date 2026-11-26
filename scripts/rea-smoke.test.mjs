@@ -140,6 +140,18 @@ test('N05 records API usage independently for the two model rounds', async () =>
   assert.equal(result.usage.total_tokens,33);
 });
 
+test('N05 retains the first round usage without claiming a total when round two fails', async () => {
+  const firstUsage = {prompt_tokens:10,completion_tokens:1,total_tokens:11};
+  const f = await fixture('incomplete-usage', {fetch: round => round === 1
+    ? new Response(JSON.stringify({usage:firstUsage,choices:[{message:first()}]}))
+    : new Response('unavailable', {status:503})});
+  const result = await f.run();
+  assert.equal(result.error.code, 'API_HTTP_ERROR');
+  assert.equal(result.usage.api_requests, 2);
+  assert.deepEqual(result.usage.calls[0].usage, firstUsage);
+  for (const field of Object.keys(firstUsage)) assert.equal(result.usage[field], null);
+});
+
 for (const [name, calls] of [
   ['unknown-tool', [call({ function: { name: 'run_shell', arguments: '{}' } })]],
   ['multiple-tools', [call(), call({ id: 'another-call' })]],

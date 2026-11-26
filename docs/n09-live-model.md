@@ -4,7 +4,40 @@
 PR #10의 A/B prepare 결과에 이어 실제 모델 응답을 받는 실행기다.
 **기본 dry-run은 요청을 보내지 않는다.** live는 명시적으로 선택하고 계정의 API 권한·할당량을 확인한 뒤 실행한다.
 
-## 현재 확인한 계정·크레딧 상황
+## 2026-11-25 모델 선택
+
+사용자가 수업에서 모델을 자유롭게 선택할 수 있다고 전달했다.
+E1 1차와 공개 연습에 사용한 `gemini-3.5-flash-lite`를 2차에도 사용한다. 11월 25일 계정의 모델 메타데이터 조회에서 버전 `3.5-flash-lite-07-2026`을 확인했다.
+
+Copilot Pro+ 활성화는 GitHub 메일로 확인했다. Copilot SDK로 구독을 연결할 경우 [SDK 인증 설정](https://docs.github.com/en/copilot/how-tos/copilot-sdk/auth)을 사용한다. 현재 N09는 Gemini의 Chat Completions 호환 엔드포인트와 Gemini API 키를 사용한다.
+
+11월 25일 Codex가 코드 `77d113e`로 공개 N06을 조건별 한 번 실행했다. 양쪽 요청·응답 모델 ID가 일치했고, A 3,772토큰, B 10,097토큰을 기록했다. A는 정상 응답에 가변 오류 코드와 배열을 포함해 참조 브리지에서 `spec_unexecutable`로 기록했다. B는 공개 정상 프레임 통신 15/15를 통과했다. 실행 원본은 로컬 `runs/gemini/2026-11-25T04-18-45-693Z/`에 있다.
+
+11월 25일 공개 N10으로 E1 요청을 A/B 각 5회 오프라인 점검했다. 이 점검에서 10개 고유 분석 ID와 공통 프롬프트 해시 및 모델 설정을 확인했다. 해당 오프라인 점검의 API 호출은 0회다.
+
+## 11월 24일 E1 1차 본 실험
+
+실행 코드 `3f2dc5b30c8f0fbb63a6a666eea90726eebc6168`, 모델 `gemini-3.5-flash-lite`, 공통 프롬프트 SHA-256 `57c0c94824ccbf0249c6b2cea32bc6a29860b3d100236d46a757f3fc04d26b27`.
+실제 API 요청 10회와 N11 v1 채점을 완료했다. 채점 담당자가 전한 주 항목 15개 기준 결과다.
+
+| 조건 | API 시도 | HTTP 503 | 응답 형식 검증 실패 | 검증된 후보 | N11 v1 점수 합계 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| A | 5 | 2 | 1 | 2 | 1/75 |
+| B | 5 | 3 | 0 | 2 | 0/75 |
+
+핸드오프 결과 10개의 SHA-256과 저장된 요청 본문 10개의 기록 해시를 대조했다. B의 5개 요청에는 같은 `binary-1` 번들이 들어갔다. 번들은 Ghidra 개요와 함수 검색 결과로 구성됐고 선택 함수·디컴파일 결과는 0건이었다. 정상 응답을 받은 B3·B5의 관찰 4건은 모두 패킷을 인용했다. 검증된 후보 4개는 첫 요청·응답 헤더만 다뤘다. 1차는 최초 본 실험 기록으로 보존하며, 프롬프트가 변경된 2차는 자체 결과를 보고한다.
+
+## E1 2차 시행 규칙 · 2026-11-26
+
+- **비교 조건** A는 `tcp-streams-v1` 패킷 근거, B는 같은 패킷 근거와 기존 `named-procedure-v1` 번들이다. 이 N10에서는 B가 바이너리 개요와 함수 검색 결과까지 제공한다. 쌍 요약에는 `packet_format`과 `rea_detail_profile.selected_procedure`가 남는다.
+- **공통 설정** Gemini Chat Completions 호환 API의 `gemini-3.5-flash-lite`, `max_tokens=4096`, JSON 모드 on, 시간 제한 120초, 시행당 호출 1회, N11 v1 주 항목 15개. Gemini 3.5 Flash-Lite의 API에서 샘플링 매개변수가 사용 중단됐으므로 요청에서 온도를 생략하고 두 조건에 제공자 기본 동작을 적용한다. 결과의 `model.temperature: null`은 매개변수 생략을 나타낸다. [Google의 API 변경 안내](https://ai.google.dev/gemini-api/docs/gemini-3#sampling-parameter-deprecation)
+- **실행 전 기록** 깨끗한 체크아웃으로 A/B를 다시 준비하고 쌍 검사에 통과한 결과를 보관한다. 실행 커밋, N10 PCAP·바이너리 해시, 공통 프롬프트 SHA-256 `ae0efeb6ae678581cccef76d1db33f49fc925439718e7c0a78af0b5866f743ae`, 설정과 요청 파일 해시를 확인한다. 응답에 모델 ID가 있으면 각 회차의 `model.returned`를 대조하고, 값이 없거나 예상 ID와 다르면 그 사실을 기록한다.
+- **순서와 상한** A와 B의 시도를 번갈아 진행해 조건별 채점 대상 5회를 확보한다. 조건별 API 시도는 최대 10회다. 조건 하나가 채점 대상 5회에 도달하면 다른 조건의 남은 회차를 진행한다. 상한에서 5회를 확보하지 못한 조건은 미완료로 보고한다.
+- **제공사·전송 오류** HTTP 429·5xx 또는 `MODEL_TIMEOUT`은 API 시도 횟수에 넣고 원본 오류와 시각을 보존한다. 채점 대상 회차는 유지하고 다음 조건의 차례를 진행한 뒤, 해당 조건 차례에 같은 준비 입력과 `repeat`로 새 `analysis_run_id`를 만든다. `Retry-After`가 있으면 같은 조건의 재호출에 적용한다. 인증·요청 설정 오류 등 그 밖의 실행 오류가 나면 기록을 남기고 중단한다.
+- **모델 응답 실패** HTTP 2xx 응답을 모두 읽은 뒤 `candidate_validation`에서 발생한 오류는 채점 대상 회차의 실패로 기록하고 다음 회차로 진행한다. 여기에는 `API_JSON`, `API_CHOICES`, `OUTPUT_TRUNCATED`, `MODEL_NO_ANSWER`, `EMPTY_CANDIDATE`, `CANDIDATE_JSON`, `UNEXPECTED_TOOL_CALL`, `OUTPUT_SCHEMA`, `QUOTE_MISMATCH`가 포함된다. 결과 JSON과 원본 응답을 보관한다.
+- **2차 결과 집계** 점수와 함께 조건별 API 시도 수, 채점 대상 회차 수, HTTP 503 건수, `MODEL_TIMEOUT` 건수, 기타 제공사 오류 건수를 각각 기록한다.
+
+## 2026-11-17 계정·크레딧 조사 기록
 
 - 세종 멀티LLM은 학생 월3,000크레딧, 매월1일 초기화로 안내한다. 이 값은 API 토큰 수가 아니다.
 - 공개 공지에서 외부 프로그램용 API 제공·키 발급·모델별 차감률은 확인하지 못했다. 연결된 메일에서도 관련 안내를 찾지 못했다.
@@ -76,6 +109,7 @@ docker compose -f compose.n05.yaml run --rm -e LLM_MAX_TOKENS_PARAM -e LLM_JSON_
 - run_id와 analysis_run_id: 이번 모델 실행의 동일한 고유 ID. CSV/체크리스트가 이 ID를 계승하거나 매핑한다.
 - preparation_run_id: 원래 입력 준비 실행의 ID. 같은 준비 입력을 재사용해도 모델 실행 ID는 매번 새로 만든다.
 - model.requested/returned: 요청한 ID와 API가 반환한 모델 식별자. operator_confirmed는 자동으로 true로 바꾸지 않는다.
+- model.temperature에는 요청에 지정한 온도를 기록한다. 제공자 기본값을 쓰면 null로 남긴다. 이 실행기는 seed를 보내지 않는다. response_id와 시작·종료 시각으로 응답을 추적한다.
 - usage.api_requests: 실제 요청 시도 횟수. HTTP429/실패도 1회로 기록하며 자동 재시도하지 않는다.
 - usage.prompt_tokens/completion_tokens/total_tokens: API가 보고한 값. 누락되면 null이고 임의 추정치를 채우지 않는다.
 - usage.provider: 캐시·추론 토큰 등을 포함한 원본 usage 구조. 학교 크레딧으로 자동 환산하지 않는다.
@@ -88,7 +122,7 @@ N12가 요구하는 실행 가능 명세의 스키마는 별도 합의해야 한
 
 ## 호출·토큰 예산
 
-현재 실행기는 한 시행당 **1회만** API를 호출한다. 기존 공통 예산의 최대2호출보다 작은 범위다.
+현재 실행기는 한 시행당 **1회만** API를 호출하며 그 상한을 runtime.max_model_calls에 기록한다. 기존 공통 예산의 최대2호출보다 작은 범위다.
 출력 상한4096, 시간 제한120초, 서버 질의0회, 자동 재시도0회다.
 제공사에 따라 추론 토큰이 출력 한도를 공유할 수 있으므로, 실제 응답의 usage/finish_reason으로 확인한다.
 

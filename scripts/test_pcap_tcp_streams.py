@@ -32,6 +32,14 @@ class StreamTests(unittest.TestCase):
         self.assertIsNone(conflict['payload_hex'])
         self.assertEqual(conflict['conflicting_overlap_bytes'], 1)
 
+    def test_fin_detects_a_missing_tail_and_keeps_data_carried_with_fin(self):
+        gap = streams.assemble([(101, b'abc')], 101, fin_sequence=107)
+        self.assertTrue(gap['has_gaps'])
+        self.assertIsNone(gap['payload_hex'])
+        complete = streams.assemble([(0xfffffffe, b'ab'), (0, b'cd')], 0xfffffffe, fin_sequence=2)
+        self.assertFalse(complete['has_gaps'])
+        self.assertEqual(complete['payload_hex'], b'abcd'.hex())
+
     def test_sequence_wrap_and_malformed_capture(self):
         result = streams.assemble([(0xfffffffe, b'ab'), (0, b'cd')], 0xfffffffe)
         self.assertEqual(result['payload_hex'], b'abcd'.hex())

@@ -170,8 +170,16 @@ export async function prepareRun({ condition, pcapPath, binaryPath, resultPath,
   return result;
 }
 export function parseArgs(argv) {
-  const names = { '--condition': 'condition', '--pcap': 'pcapPath', '--binary': 'binaryPath',
-    '--out': 'resultPath', '--execution': 'execution', '--experiment': 'experiment', '--packet-format': 'packetFormat' };
+  const names = {
+    '--condition': 'condition',
+    '--pcap': 'pcapPath',
+    '--binary': 'binaryPath',
+    '--out': 'resultPath',
+    '--execution': 'execution',
+    '--experiment': 'experiment',
+    '--packet-format': 'packetFormat',
+    '--binary-profile': 'binaryProfile',
+  };
   const options = {};
   for (let index = 0; index < argv.length; index += 2) {
     const key = names[argv[index]], value = argv[index + 1];
@@ -179,7 +187,14 @@ export function parseArgs(argv) {
       throw fault('USAGE', 'Use each named option once with a value');
     options[key] = value;
   }
-  return options;
+
+  const { binaryProfile, ...prepareOptions } = options;
+  if (binaryProfile !== undefined) {
+    if (prepareOptions.condition !== 'B' || binaryProfile !== 'named-procedure-v1')
+      throw fault('USAGE', 'Use --binary-profile named-procedure-v1 with condition B');
+    prepareOptions.binaryDetails = true;
+  }
+  return prepareOptions;
 }
 export async function main(argv = process.argv.slice(2)) {
   const result = await prepareRun(parseArgs(argv));

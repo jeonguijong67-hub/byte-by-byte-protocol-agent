@@ -19,7 +19,7 @@ export function main(argv=process.argv.slice(2)) {
     LLM_CHAT_COMPLETIONS_URL:'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',
     LLM_MAX_TOKENS_PARAM:'max_tokens',LLM_JSON_MODE:'on'};
   const execution=spawnSync('docker',['compose','-f','compose.n05.yaml','run','--rm',
-    '-e','LLM_MAX_TOKENS_PARAM','-e','LLM_JSON_MODE','n05','node','scripts/gemini-practice.mjs',
+    '-e','LLM_MAX_TOKENS_PARAM','-e','LLM_JSON_MODE','-e','LLM_TEMPERATURE','n05','node','scripts/gemini-practice.mjs',
     '--out','runs/gemini/'+tag,'--execution',options.execution,'--phase',options.phase,
     '--allow-dirty',String(options.allowDirty)],{cwd:root,env,stdio:'inherit',windowsHide:true});
   console.log('Practice artifacts: runs/gemini/'+tag);

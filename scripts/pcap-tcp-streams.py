@@ -7,7 +7,7 @@ from pathlib import Path
 import struct
 
 
-def assemble(segments, base):
+def assemble(segments, base, fin_sequence=None):
     data = {}
     retransmitted = conflicts = 0
     for sequence, payload in segments:
@@ -22,6 +22,11 @@ def assemble(segments, base):
                 data[i] = byte
     positions = sorted(data)
     contiguous = not positions or (positions[0] == 0 and positions[-1] + 1 == len(positions))
+    if fin_sequence is not None:
+        fin_offset = (fin_sequence - base) & 0xffffffff
+        if fin_offset >= 0x80000000 or (positions and positions[-1] >= fin_offset):
+            raise ValueError('TCP FIN sequence conflicts with the selected stream')
+        contiguous = contiguous and len(data) == fin_offset
     return {'payload_hex': bytes(data[i] for i in positions).hex() if contiguous and not conflicts else None,
             'captured_payload_bytes': len(data), 'has_gaps': not contiguous,
             'retransmitted_bytes': retransmitted, 'conflicting_overlap_bytes': conflicts}
@@ -80,7 +85,8 @@ def extract(raw):
             existing = active.get(pair)
             if existing is None or existing['client'] != source or existing['client_base'] != (sequence + 1) & 0xffffffff:
                 existing = {'client': source, 'server': target, 'client_base': (sequence + 1) & 0xffffffff,
-                            'server_base': None, 'client_segments': [], 'server_segments': []}
+                            'server_base': None, 'client_segments': [], 'server_segments': [],
+                            'client_fin': None, 'server_fin': None}
                 sessions.append(existing)
                 active[pair] = existing
         session = active.get(pair)
@@ -90,8 +96,15 @@ def extract(raw):
         if flags & 2:
             session[direction + '_base'] = (sequence + 1) & 0xffffffff
         payload = tcp[thl:]
+        payload_sequence = (sequence + (1 if flags & 2 else 0)) & 0xffffffff
         if payload:
-            session[direction + '_segments'].append(((sequence + (1 if flags & 2 else 0)) & 0xffffffff, payload))
+            session[direction + '_segments'].append((payload_sequence, payload))
+        if flags & 1:
+            fin_key = direction + '_fin'
+            fin_sequence = (payload_sequence + len(payload)) & 0xffffffff
+            if session[fin_key] is not None and session[fin_key] != fin_sequence:
+                raise ValueError('Conflicting TCP FIN sequences')
+            session[fin_key] = fin_sequence
     result = []
     for index, session in enumerate(sessions, 1):
         item = {'session_id': index, 'client': list(session['client']), 'server': list(session['server'])}
@@ -99,13 +112,16 @@ def extract(raw):
             base = session[direction + '_base']
             if base is None:
                 raise ValueError('Capture lacks the TCP handshake for one direction')
-            item[direction + '_to_' + ('server' if direction == 'client' else 'client')] = assemble(session[direction + '_segments'], base)
+            peer = 'server' if direction == 'client' else 'client'
+            item[direction + '_to_' + peer] = assemble(
+                session[direction + '_segments'], base, session[direction + '_fin'])
         result.append(item)
     if not result:
         raise ValueError('No TCP sessions found')
     return {'format': 'tcp-streams-v1', 'pcap_sha256': hashlib.sha256(raw).hexdigest(), 'sessions': result,
             'skipped_non_tcp_packets': skipped,
             'limitations': ['Directional streams are not application message boundaries.',
+                            'Without a FIN, payload missing after the last captured byte may be undetectable.',
                             'IPv4 TCP only; no IP fragmentation, pcapng, VLAN or missing handshake inference.']}
 
 
